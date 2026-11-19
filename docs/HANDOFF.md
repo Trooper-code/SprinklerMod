@@ -3,7 +3,7 @@
 ## Setup
 | What | Where |
 |------|-------|
-| Repo (local only, no remote) | TODO Josh, e.g. `E:\S1-modding\S1-Overhead-Sprinkler` |
+| Repo (local only, no remote) | `E:\Sprinkler` |
 | Coding agent | Antigravity, Gemini 4 Hydrogen at Medium (rules: `AGENTS.md`) |
 | Game install, normal IL2CPP branch (never committed, read-only) | TODO Josh, default `C:\Program Files (x86)\Steam\steamapps\common\Schedule I` |
 | Mono copy of the game, for decompiling (never committed, read-only) | TODO Josh (see "Getting a Mono copy" below) |
