@@ -13,7 +13,8 @@ under it, and how the game adds water to a pot. Then write a short design for M1
 rack and waters every pot under it. Prove the key facts with a log-only probe mod that Josh runs.
 
 ## Branch
-`m0-research`, branched from tag `start` (the initial scaffold commit).
+`m0-research`, branched from tag `m0-base` (main, once the game paths and versions are filled in
+in `docs/HANDOFF.md`). If that tag doesn't exist yet, stop and report.
 
 ## Known facts
 | Fact | Status | Evidence |
