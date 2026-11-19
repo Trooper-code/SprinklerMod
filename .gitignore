@@ -1,0 +1,23 @@
+# Build output
+bin/
+obj/
+dist/
+*.user
+Directory.Build.props.user
+
+# Decompiler output: game code, never commit
+_decompiled/
+
+# Game files and assemblies: never commit (users supply their own)
+*.dll
+*.pdb
+Schedule I_Data/
+MelonLoader/
+Il2CppAssemblies/
+
+# Editors and OS
+.vs/
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
