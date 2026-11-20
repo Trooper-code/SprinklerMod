@@ -32,7 +32,7 @@ _To be filled by M0._
 ## Saving placed items
 _To be filled by M0._
 
-## Time ticks
+## Activating rack items
 _To be filled by M0._
 
 ## S1API support
