@@ -3,10 +3,10 @@
 ## Setup
 | What | Where |
 |------|-------|
-| Repo (local only, no remote) | `E:\Sprinkler` |
+| Repo (local only, no remote) | `E:\Sprinkler\S1-Overhead-Sprinkler` (open this folder in Antigravity) |
 | Coding agent | Antigravity, Gemini 4 Hydrogen at Medium (rules: `AGENTS.md`) |
 | Game install, normal IL2CPP branch (never committed, read-only) | TODO Josh, default `C:\Program Files (x86)\Steam\steamapps\common\Schedule I` |
-| Mono copy of the game, for decompiling (never committed, read-only) | TODO Josh (see "Getting a Mono copy" below) |
+| Mono copy of the game, for decompiling (never committed, read-only) | `E:\Sprinkler\Schedule I Mono` (copied 2026-11-19) |
 | MelonLoader logs | `<game folder>\MelonLoader\Latest.log` |
 
 **Getting a Mono copy:** in Steam, right-click Schedule I → Properties → Betas → pick `alternate`, and let it
@@ -18,7 +18,7 @@ update. Copy the whole game folder somewhere else (e.g. `E:\S1-modding\Schedule 
 | Tool | Version |
 |------|---------|
 | Schedule I (normal branch) | TODO Josh (main menu corner; v0.4.7f12 was the latest seen publicly in Oct 2026) |
-| Schedule I (Mono copy) | TODO Josh |
+| Schedule I (Mono copy) | TODO Josh (main menu corner; the files only show Unity 2022.3.62f2) |
 | MelonLoader | 0.7.x (exact: TODO Josh) |
 | S1API Forked (ifBars) | 3.0.22 or newer (exact: TODO) |
 | .NET SDK | TODO (agent records it in the M0 report) |
