@@ -1,5 +1,18 @@
 # Decisions
 
+## D5 · 2026-11-19 · Water on interact for now; automatic watering later, maybe
+**Decided:** The player activates the head, the same way the vanilla Pot Sprinkler and Big Sprinkler work, and it
+waters every pot under its rack once. Automatic watering is a possible later milestone, not part of v1.
+**Rejected:** Automatic watering below a threshold (D3). It needs a periodic check on a game-time tick, a threshold
+setting, and extra multiplayer and performance testing.
+**Why:** Josh's choice: keep v1 simple and get it working first. Manual activation matches how the game's own
+sprinklers work, so the head can reuse more of their code.
+**Open question for M0:** how the player activates something hanging on the rack (look at it and press the
+interact key, if it can be reached and targeted; otherwise interact with the rack or a small control).
+**Revisit if:** v1 ships and works, and automatic watering is still wanted. Botanists still can't use it (D3's
+point), so that's the main reason to come back to it.
+**Supersedes:** D3
+
 ## D4 · 2026-11-19 · Keep the repo local
 **Decided:** The repo lives only on Josh's PC. No GitHub remote, no CI, no PRs. Antigravity commits to local
 branches and Claude reviews them through the connected folder.
@@ -10,7 +23,7 @@ mistake there would be public).
 published later as-is (add a remote, restore CI from the coordinator-skills templates).
 **Supersedes:** nothing
 
-## D3 · 2026-11-19 · Water automatically, not on interact
+## D3 · 2026-11-19 · Water automatically, not on interact (superseded by D5)
 **Decided:** The head tops up any pot under its rack whose water drops below a set level. No button to press.
 **Rejected:** Interact to activate, like the vanilla sprinklers (a head up on the rack is awkward to aim at, and it
 wouldn't help Botanists). A wall valve linking heads (extra item and UI for little gain; can be added later).

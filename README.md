@@ -1,17 +1,16 @@
 # Overhead Sprinkler for Schedule I
 
 A MelonLoader mod for **Schedule I** that adds an **Overhead Sprinkler Head**. You hang it on a Suspension Rack,
-the same way you hang grow lights, and it waters every pot under that rack **automatically** when the pots start
-running dry.
+the same way you hang grow lights, and when you activate it, it waters every pot under that rack at once.
 
 > **Status: in development, not playable yet.** See [docs/MILESTONES.md](docs/MILESTONES.md) for progress.
 
 ## Planned features
 - **Hangs on the Suspension Rack.** Snaps on like a grow light. No new frame to build.
 - **One head per rack.** It covers every pot under the rack it's attached to.
-- **Waters automatically.** When a pot under it drops below a set water level, it tops that pot up. You (and your
-  Botanists) never need to water those pots by hand.
-- **Settings** for the auto-water level and other options, in MelonLoader's preferences file.
+- **One press waters the whole rack.** Activate the head and every pot under the rack gets watered, the same way
+  the game's own sprinklers work.
+- **Automatic watering** may come in a later version.
 - **Works on both game branches:** the normal (IL2CPP) branch and the `alternate` (Mono) branch.
 
 ## How it works (for modders)

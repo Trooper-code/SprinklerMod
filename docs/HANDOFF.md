@@ -25,7 +25,8 @@ update. Copy the whole game folder somewhere else (e.g. `E:\S1-modding\Schedule 
 
 ## How it works now
 No code yet. The design is settled: an Overhead Sprinkler Head hangs on a Suspension Rack like a grow light, covers
-every pot under that one rack, and waters them automatically below a threshold (`docs/DECISIONS.md` D1–D3). The
+every pot under that one rack, and waters them all when the player activates it (`docs/DECISIONS.md` D1, D2, D4,
+D5; D5 replaced automatic watering). The
 plan is to clone a grow light with S1API and reuse the vanilla sprinklers' water-adding code. Whether that works
 is what M0 finds out. Research so far: `docs/research/INDEX.md`.
 

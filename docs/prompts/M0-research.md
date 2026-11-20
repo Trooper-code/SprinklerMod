@@ -5,7 +5,8 @@
 - `docs/HANDOFF.md`, sections "Setup" and "Tool versions" (game paths and versions)
 - `docs/MILESTONES.md`, rows M0 and M1
 - `docs/research/INDEX.md`, then `docs/research/game-systems.md`
-- `docs/DECISIONS.md` D1–D3 (the design this research must support; don't reopen them)
+- `docs/DECISIONS.md` D1, D2, D4 and D5 (the design this research must support; don't reopen them). D3 is
+  superseded: no automatic watering in v1.
 
 ## Goal
 Find out, with evidence, how Schedule I attaches grow lights to the Suspension Rack, how a grow light finds the pots
@@ -22,6 +23,7 @@ in `docs/HANDOFF.md`). If that tag doesn't exist yet, stop and report.
 | Grow lights hang on the Suspension Rack in the vanilla game | confirmed | Josh's in-game screenshot, 2026-11-19 |
 | The vanilla game has a Big Sprinkler that waters up to 8 pots next to it or diagonal from it, and a Pot Sprinkler that waters one adjacent pot or grow tent | unverified | Fandom wiki Items page |
 | Both vanilla sprinklers are activated by the player; Botanists can't use them | unverified | wiki descriptions; Steam forum post |
+| v1 waters on player activation, like the vanilla sprinklers; no automatic watering | confirmed | design decision, `docs/DECISIONS.md` D5 |
 | The Mono build's `Assembly-CSharp.dll` is at `<Mono copy>\Schedule I_Data\Managed\` and decompiles to readable C# | unverified | Schedule I modding docs (s1modding.github.io) |
 | IL2CPP proxy assemblies are in `<game>\MelonLoader\Il2CppAssemblies\`; class names carry an `Il2Cpp` namespace prefix (e.g. `Il2CppScheduleOne.Persistence`) | unverified | Schedule I modding wiki example code |
 | S1API has `BuildableItemCreator` with `CreateBuilder()` and `CloneFrom()` for placeable items | unverified | deepwiki page for ifBars/S1API, "Item registration and builders" |
@@ -43,8 +45,10 @@ in `docs/HANDOFF.md`). If that tag doesn't exist yet, stop and report.
    wired, and whether either has a water tank or a cooldown. Which parts could the head reuse directly?
 6. **Saving.** How placed buildables and rack attachments are saved and loaded (save classes, item ID, parent
    link). What happens on load when an item ID isn't known, e.g. after the mod is removed?
-7. **Time ticks.** Which game-time event (per in-game minute or similar) the mod can subscribe to for a cheap
-   periodic "any pot below the threshold?" check, instead of checking every frame.
+7. **Activating a rack item.** Can the player look at an item hanging on a Suspension Rack and use the interact
+   key on it? Check the interaction system: how far it reaches, what it raycasts against, and whether grow lights
+   (or anything else on the rack) already have an interaction. If a hung item can't be targeted, find the next best
+   option (interacting with the rack itself, or a small floor or wall control) and say what each would take.
 8. **S1API.** Read the S1API source (github.com/ifBars/S1API). Can `BuildableItemCreator.CloneFrom` clone a grow
    light so the clone keeps the rack-attach behaviour? Can S1API add the item to Oscar's shop? What does it wrap for
    pots or water, if anything?
@@ -56,7 +60,7 @@ in `docs/HANDOFF.md`). If that tag doesn't exist yet, stop and report.
     `tools/probe/README.md` with build steps and exactly what Josh should do and send back. Build it to confirm it
     compiles. Josh runs it; the coordinator uses his log to confirm or reject your findings.
 11. **M1 design.** Write `docs/research/m1-design.md` (and add it to the index): how the head should be built (clone
-    of which item), how it finds its rack's pots, how it adds water, and the risks. Plain English plus class and
+    of which item), how it finds its rack's pots, how the player activates it (task 7), how it adds water, and the risks. Plain English plus class and
     method names, no code.
 12. Write every finding into `docs/research/game-systems.md` in its section, labeled, with evidence (decompiled
     class and method name). Static findings are **unverified** until the probe log confirms them.
@@ -69,6 +73,9 @@ in `docs/HANDOFF.md`). If that tag doesn't exist yet, stop and report.
   label, and that the probe builds.
 - REA: only for task 9 if the proxy assemblies don't answer it. Read-only.
 - Not /swarm: this is one linear trace.
+
+Low priority, only if you come across it: note which game-time event (per in-game minute or similar) a future
+automatic mode could subscribe to. One line in the research doc is enough; don't spend time on it.
 
 ## Task-specific constraints
 - Research only, plus the probe mod. No mod code outside `tools/probe/`.
