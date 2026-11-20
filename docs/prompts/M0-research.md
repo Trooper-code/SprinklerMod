@@ -24,8 +24,9 @@ in `docs/HANDOFF.md`). If that tag doesn't exist yet, stop and report.
 | The vanilla game has a Big Sprinkler that waters up to 8 pots next to it or diagonal from it, and a Pot Sprinkler that waters one adjacent pot or grow tent | unverified | Fandom wiki Items page |
 | Both vanilla sprinklers are activated by the player; Botanists can't use them | unverified | wiki descriptions; Steam forum post |
 | v1 waters on player activation, like the vanilla sprinklers; no automatic watering | confirmed | design decision, `docs/DECISIONS.md` D5 |
-| The Mono build's `Assembly-CSharp.dll` is at `<Mono copy>\Schedule I_Data\Managed\` and decompiles to readable C# | unverified | Schedule I modding docs (s1modding.github.io) |
-| IL2CPP proxy assemblies are in `<game>\MelonLoader\Il2CppAssemblies\`; class names carry an `Il2Cpp` namespace prefix (e.g. `Il2CppScheduleOne.Persistence`) | unverified | Schedule I modding wiki example code |
+| The Mono copy's `Assembly-CSharp.dll` is at `E:\Sprinkler\Schedule I Mono\Schedule I_Data\Managed\`, and the copy is a Mono build (no `GameAssembly.dll`) | confirmed | coordinator listed the files, 2026-11-19 |
+| Main install and Mono copy are both v0.4.7f12 Alternate | confirmed | Josh's main menu screenshots, 2026-11-19 |
+| Checking class names against the IL2CPP proxy assemblies is **not** part of M0; it moves to M2 | confirmed | coordinator decision, 2026-11-19 (the main install is on the Mono branch during M0) |
 | S1API has `BuildableItemCreator` with `CreateBuilder()` and `CloneFrom()` for placeable items | unverified | deepwiki page for ifBars/S1API, "Item registration and builders" |
 | MelonLoader 0.7.x; S1API Forked 3.0.22 is the latest on Thunderstore | unverified | Thunderstore pages, 2026-11-19 |
 
@@ -52,26 +53,24 @@ in `docs/HANDOFF.md`). If that tag doesn't exist yet, stop and report.
 8. **S1API.** Read the S1API source (github.com/ifBars/S1API). Can `BuildableItemCreator.CloneFrom` clone a grow
    light so the clone keeps the rack-attach behaviour? Can S1API add the item to Oscar's shop? What does it wrap for
    pots or water, if anything?
-9. **IL2CPP check.** For each class you name in tasks 2–7, check it exists under the same name (with the `Il2Cpp`
-   prefix) in the IL2CPP proxy assemblies. List any that differ.
-10. **Probe mod.** Write a small log-only MelonLoader mod in `tools/probe/` (Mono target) that, on a hotkey, logs:
+9. **Probe mod.** Write a small log-only MelonLoader mod in `tools/probe/` (Mono target) that, on a hotkey, logs:
     every Suspension Rack in the current property, what's attached to each, the pots under each rack (by your
     task 3 method), and each pot's current and max water. It must **not change anything** in the game. Add a
     `tools/probe/README.md` with build steps and exactly what Josh should do and send back. Build it to confirm it
-    compiles. Josh runs it; the coordinator uses his log to confirm or reject your findings.
-11. **M1 design.** Write `docs/research/m1-design.md` (and add it to the index): how the head should be built (clone
+    compiles. Josh runs it in his main install (on the `alternate` Mono branch, with MelonLoader); the coordinator
+    uses his log to confirm or reject your findings.
+10. **M1 design.** Write `docs/research/m1-design.md` (and add it to the index): how the head should be built (clone
     of which item), how it finds its rack's pots, how the player activates it (task 7), how it adds water, and the risks. Plain English plus class and
     method names, no code.
-12. Write every finding into `docs/research/game-systems.md` in its section, labeled, with evidence (decompiled
+11. Write every finding into `docs/research/game-systems.md` in its section, labeled, with evidence (decompiled
     class and method name). Static findings are **unverified** until the probe log confirms them.
 
 ## Tools
 - `ilspycmd`: decompile the Mono `Assembly-CSharp.dll` for tasks 2–8. Installing it with
   `dotnet tool install -g ilspycmd` is allowed for this task.
-- superpowers `writing-plans`: for the M1 design in task 11.
+- superpowers `writing-plans`: for the M1 design in task 10.
 - superpowers `verification-before-completion`: before you report done, check every finding has its evidence and
   label, and that the probe builds.
-- REA: only for task 9 if the proxy assemblies don't answer it. Read-only.
 - Not /swarm: this is one linear trace.
 
 Low priority, only if you come across it: note which game-time event (per in-game minute or similar) a future
@@ -85,7 +84,7 @@ automatic mode could subscribe to. One line in the research doc is enough; don't
 
 ## Stop and report if
 - The AGENTS.md stop conditions are met, or:
-- The Mono copy's path or version is missing from HANDOFF.md, or the Mono and IL2CPP game versions differ.
+- The Mono copy's path or version is missing from HANDOFF.md, or the main install and the Mono copy versions differ.
 - Rack attachment turns out to be hard-wired to the grow light class in a way a clone can't use. Report what it
   checks, and stop before designing around it (that would reopen D1).
 
