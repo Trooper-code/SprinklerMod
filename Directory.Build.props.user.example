@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Path to the Managed folder of your Mono Schedule I copy (e.g. Steam alternate branch) -->
+    <ScheduleIManagedDir>C:\Path\To\Schedule I Mono\Schedule I_Data\Managed</ScheduleIManagedDir>
+  </PropertyGroup>
+</Project>
