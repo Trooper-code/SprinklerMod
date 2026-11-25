@@ -18,37 +18,28 @@ Gathered from public pages on 2026-11-19. These are player-facing facts, not cod
 | BigSprinklerLogic (k0Mods) gave the Big Sprinkler logic before the game did; it's now deprecated | unverified | Thunderstore page |
 
 ## Suspension Rack attachment
-All findings below are **unverified** (static decompilation of Mono `Assembly-CSharp.dll` v0.4.7f12; awaiting probe-log confirmation).
-
-- **Rack class:** `ScheduleOne.ObjectScripts.FloorRack` (inherits `GridItem`, implements `IProceduralTileContainer`).
-- **Attachment slots:** `FloorRack` exposes `public List<ProceduralTile> procTiles` via `IProceduralTileContainer.ProceduralTiles`. Each `ProceduralTile` (`ScheduleOne.Tiles.ProceduralTile`) has `TileType` (`EProceduralTileType.Rack`), `ParentBuildableItem` (pointing back to the `FloorRack`), `MatchedFootprintTile` (the rack's `FootprintTile` under that slot, whose `MatchedStandardTile` is the floor `Tile`), and `Occupants` (`List<ProceduralGridItem>`). The exact count of `procTiles` per rack is set on the Unity prefab (logged by `RackProbe` in-game).
-- **Attachment eligibility (not class-locked):** `GrowLight` inherits from `ScheduleOne.EntityFramework.ProceduralGridItem`. `BuildManager.StartBuilding` reads `BuildableItemDefinition.BuiltItem.BuildHandler`, which for a `ProceduralGridItem` is `BuildStart_ProceduralGrid` + `BuildUpdate_ProceduralGrid`. `BuildUpdate_ProceduralGrid.IsMatchValid(FootprintTile, ProceduralTile)` checks only:
+- **Rack class:** `ScheduleOne.ObjectScripts.FloorRack` (inherits `GridItem`, implements `IProceduralTileContainer`) (**unverified** static detail; attachment confirmed live).
+- **Attachment slots:** `FloorRack` exposes `public List<ProceduralTile> procTiles` via `IProceduralTileContainer.ProceduralTiles`. Each `ProceduralTile` (`ScheduleOne.Tiles.ProceduralTile`) has `TileType` (`EProceduralTileType.Rack`), `ParentBuildableItem` (pointing back to the `FloorRack`), `MatchedFootprintTile` (the rack's `FootprintTile` under that slot, whose `MatchedStandardTile` is the floor `Tile`), and `Occupants` (`List<ProceduralGridItem>`).
+- **Attachment eligibility (not class-locked):** **confirmed** — cloning `fullspectrumgrowlight` with a new item ID (`overhead_sprinkler_head`) snaps onto Suspension Racks (`FloorRack`) in-game without mutating `GrowLight` checks [confirmed @ m1-poc | Schedule I, main install=v0.4.7f12 Alternate, MelonLoader=0.7.3, S1API Forked (ifBars)=3.2.3] (`MelonLoader/Latest.log` 2026-11-25). Statically, `BuildUpdate_ProceduralGrid.IsMatchValid(FootprintTile, ProceduralTile)` checks only:
   1. Distance between the item's `FootprintTile` and the rack's `ProceduralTile` is `< 0.01f`
   2. `matchedTile.Occupants.Count == 0`
   3. `matchedTile.TileType == ItemClass.ProceduralTileType` (both `EProceduralTileType.Rack`)
-  There is **no** type check for `GrowLight`. Any `ProceduralGridItem` with `ProceduralTileType == Rack` and matching `CoordinateFootprintTilePairs` can attach.
-- **Rack destruction guard:** `FloorRack.CanBeDestroyed(out string reason)` blocks destruction if any `procTile` in `procTiles` has `Occupants.Count > 0 || OccupantTiles.Count > 0`.
+  There is **no** type check for `GrowLight`.
+- **Rack destruction guard:** `FloorRack.CanBeDestroyed(out string reason)` blocks destruction if any `procTile` in `procTiles` has `Occupants.Count > 0 || OccupantTiles.Count > 0` (**unverified**, static decompilation).
 
 ## Grow light pot coverage
-All findings below are **unverified** (static decompilation of Mono `Assembly-CSharp.dll` v0.4.7f12; awaiting probe-log confirmation).
-
-- **How `GrowLight` finds pots:** `GrowLight` does **not** use a trigger collider, raycast, or per-frame check. On placement (`GrowLight.InitializeProceduralGridItem`), it iterates `SyncAccessor_footprintTileMatches` (`List<CoordinateProceduralTilePair>`), resolves each `item.tile` (`tileParent.GetComponent<IProceduralTileContainer>().ProceduralTiles[item.tileIndex]`), and calls `item.tile.MatchedFootprintTile.MatchedStandardTile.LightExposureNode.AddSource(usableLightSource, 1f)` (and `RemoveSource` in `GrowLight.Destroy()`).
-- **Getting every pot under a rack:** From any attached `ProceduralGridItem` (including our sprinkler head), `SyncAccessor_footprintTileMatches[0].tileParent` is the `FloorRack`'s `NetworkObject` (`tileParent.GetComponent<FloorRack>()`). Iterating `rack.ProceduralTiles` -> `procTile.MatchedFootprintTile.MatchedStandardTile.BuildableOccupants` (and deduplicating) yields every `GridItem` (`Pot`, `MushroomBed`, etc.) placed on the floor tiles under that rack. Alternatively, `rack.CoordinatePairs` on `rack.OwnerGrid` also maps to the floor `Tile`s under the rack.
+- **How `GrowLight` finds pots:** `GrowLight` does **not** use a trigger collider, raycast, or per-frame check (**unverified**, static decompilation). On placement (`GrowLight.InitializeProceduralGridItem`), it iterates `SyncAccessor_footprintTileMatches` (`List<CoordinateProceduralTilePair>`), resolves each `item.tile`, and calls `item.tile.MatchedFootprintTile.MatchedStandardTile.LightExposureNode.AddSource(usableLightSource, 1f)` (and `RemoveSource` in `GrowLight.Destroy()`).
+- **Getting every pot under a rack:** **confirmed** — from any attached `ProceduralGridItem`, `sync___get_value_footprintTileMatches()[0].tileParent.GetComponent<FloorRack>()` resolves the parent rack, and iterating `rack.ProceduralTiles` → `procTile.MatchedFootprintTile.MatchedStandardTile.BuildableOccupants` (plus `rack.OwnerGrid` / `rack.CoordinatePairs` fallback) finds every `GrowContainer` under every rack with a head in the property (verified across 2 racks and 2 Moisture-Preserving Pots in the Barn) [confirmed @ m1-poc | Schedule I, main install=v0.4.7f12 Alternate, MelonLoader=0.7.3, S1API Forked (ifBars)=3.2.3] (`MelonLoader/Latest.log` 2026-11-25).
 
 ## Pot water
-All findings below are **unverified** (static decompilation of Mono `Assembly-CSharp.dll` v0.4.7f12; awaiting probe-log confirmation).
-
-- **Base class:** Both `ScheduleOne.ObjectScripts.Pot` and `ScheduleOne.ObjectScripts.MushroomBed` inherit from `ScheduleOne.Growing.GrowContainer` (`: GridItem, IUsable, ITransitEntity`). Grow tents are `Pot` prefabs using `GrowContainer._lightSourceOverride` (`GetAverageLightExposure`).
+- **Base class:** Both `ScheduleOne.ObjectScripts.Pot` and `ScheduleOne.ObjectScripts.MushroomBed` inherit from `ScheduleOne.Growing.GrowContainer` (`: GridItem, IUsable, ITransitEntity`). Grow tents are `Pot` prefabs using `GrowContainer._lightSourceOverride` (`GetAverageLightExposure`) (**unverified**, static decompilation).
 - **Fields and properties:**
-  - `GrowContainer.MoistureCapacity` (`float`, default `5f`)
+  - `GrowContainer.MoistureCapacity` (`float`, **confirmed** `5.0` on Moisture-Preserving Pot in-game) [confirmed @ m1-poc | Schedule I, main install=v0.4.7f12 Alternate, MelonLoader=0.7.3, S1API Forked (ifBars)=3.2.3]
   - `GrowContainer._currentMoistureAmount` (`protected float`)
-  - `GrowContainer.NormalizedMoistureAmount` (`public float`, `_currentMoistureAmount / MoistureCapacity`, range `0..1`)
-  - `GrowContainer._moistureDrainPerHour` (`private float`, default `1f`)
-- **Draining:** `GrowContainer` subscribes `OnMinPass` to `NetworkSingleton<ScheduleOne.GameTime.TimeManager>.Instance.onMinutePass` (and `OnTimeSkipped` to sleep/time-skip). `DrainMoisture(int minutes)` calls `ChangeMoistureAmount((-_moistureDrainPerHour / 60f) * minutes)`. *(Note for future automatic mode: `TimeManager.Instance.onMinutePass` is the per-in-game-minute event.)*
-- **Adding water & networking:**
-  - `GrowContainer.ChangeMoistureAmount(float amount)` calls `SetMoistureAmount(_currentMoistureAmount + amount)` (clamped `0..MoistureCapacity`, then calls `RefreshSoilVisuals()`).
-  - `GrowContainer.SyncMoistureData()` sends `SetMoistureData_Server(_currentMoistureAmount)` (`[ServerRpc(RequireOwnership = false)]`), which calls `SetMoistureData_Client(null, amount)` (`[ObserversRpc]`), calling `SetMoistureAmount(amount)` on all clients.
-  - Because `Pot` and `MushroomBed` both inherit `GrowContainer`, the same `ChangeMoistureAmount` and `SyncMoistureData` methods work for pots, grow tents, and mushroom beds (`MushroomBed.SetMoistureAmount` also updates `_soilMaterialInstance`).
+  - `GrowContainer.NormalizedMoistureAmount` (`public float`, `_currentMoistureAmount / MoistureCapacity`, range `0..1`, **confirmed**)
+  - `GrowContainer._moistureDrainPerHour` (`private float`, default `1f`, **unverified**)
+- **Draining:** `GrowContainer` subscribes `OnMinPass` to `NetworkSingleton<ScheduleOne.GameTime.TimeManager>.Instance.onMinutePass` (and `OnTimeSkipped` to sleep/time-skip). `DrainMoisture(int minutes)` calls `ChangeMoistureAmount((-_moistureDrainPerHour / 60f) * minutes)` (**unverified**, static decompilation).
+- **Adding water & networking:** **confirmed** — calling `GrowContainer.ChangeMoistureAmount(container.MoistureCapacity)` + `GrowContainer.SyncMoistureData()` refills pots cleanly (`0% -> 100%` and `97% -> 100%` on Moisture-Preserving Pots in the Barn) [confirmed @ m1-poc | Schedule I, main install=v0.4.7f12 Alternate, MelonLoader=0.7.3, S1API Forked (ifBars)=3.2.3] (`MelonLoader/Latest.log` 2026-11-25). `SyncMoistureData()` sends `SetMoistureData_Server` → `SetMoistureData_Client` (**unverified** in multiplayer until M4).
 
 ## Vanilla sprinklers
 All findings below are **unverified** (static decompilation of Mono `Assembly-CSharp.dll` v0.4.7f12).

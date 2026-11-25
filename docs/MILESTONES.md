@@ -1,15 +1,15 @@
 # Milestones
 
 ## Next
-**Antigravity:** M1 proof of concept on branch `m1-poc`.
-**Josh:** Test M1 on Windows (Mono branch) with `F7` / `F8` and send `MelonLoader\Latest.log`.
+**Antigravity:** M2 real item + "Sprinklers" Phone App on branch `m2-phone-app`.
+**Josh:** Test M2 on Windows (Oscar's Warehouse $1,500 listing, Phone App watering, and save/reload persistence).
 
 ## Milestones
 | # | Milestone | Done when | Status | Tag |
 |---|-----------|-----------|--------|-----|
-| M0 | Research | Rack attachment, grow-light pot coverage, pot water API, how a rack item is activated, and save/load are documented with evidence; a log-only probe mod confirms the key ones in a real run; an M1 design is written | done (probe optional; M1 tests live) | |
-| M1 | Proof of concept | A head clones a grow light via S1API, hangs on a Suspension Rack, and `F8` waters every pot under all heads in the current property (`F7` spawns head) | in progress | |
-| M2 | Real item + Phone App | Own name, description, price and Oscar's shop listing; works after save and reload; "Sprinklers" S1API `PhoneApp` with per-property **Water** and **Water All** | planned | |
+| M0 | Research | Rack attachment, grow-light pot coverage, pot water API, how a rack item is activated, and save/load are documented with evidence; a log-only probe mod confirms the key ones in a real run; an M1 design is written | done (probe optional; M1 confirmed live) | |
+| M1 | Proof of concept | A head clones a grow light via S1API, hangs on a Suspension Rack, and `F8` waters every pot under all heads in the current property (`F7` spawns head) | done | |
+| M2 | Real item + Phone App | Own name, description, price and Oscar's shop listing; works after save and reload; "Sprinklers" S1API `PhoneApp` with per-property **Water** and **Water All** | in progress | |
 | M3 | Fertilization / Additives | Property storage shelf consumption + **Fert / PGR / Speed Grow** buttons and status feedback in the Phone App | planned | |
 | M4 | Polish, effects & IL2CPP | 5-segment spray effect and sound; `MelonPreferences`; co-op sync; main install back on normal branch with every game class checked against IL2CPP proxies and an IL2CPP build that loads | planned | |
 | M5 | Model and release | Original sprinkler model (pipe and nozzle); IL2CPP and Mono builds; README complete; packaged zip; `v1.0.0` (publishing later is optional, see D4) | planned | |

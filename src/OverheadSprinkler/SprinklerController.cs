@@ -30,6 +30,35 @@ public readonly struct ContainerWaterResult
 }
 
 /// <summary>
+/// Snapshot of an owned property's installed overhead sprinklers and covered grow containers.
+/// </summary>
+public sealed class PropertySprinklerInfo
+{
+    public PropertySprinklerInfo(
+        Property property,
+        string propertyName,
+        int headCount,
+        int rackCount,
+        int containerCount,
+        float averageMoistureNormalized)
+    {
+        Property = property;
+        PropertyName = propertyName;
+        HeadCount = headCount;
+        RackCount = rackCount;
+        ContainerCount = containerCount;
+        AverageMoistureNormalized = averageMoistureNormalized;
+    }
+
+    public Property Property { get; }
+    public string PropertyName { get; }
+    public int HeadCount { get; }
+    public int RackCount { get; }
+    public int ContainerCount { get; }
+    public float AverageMoistureNormalized { get; }
+}
+
+/// <summary>
 /// Summary of a single property-wide watering pass.
 /// </summary>
 public sealed class WaterSummary
@@ -63,7 +92,7 @@ public sealed class WaterSummary
 
 /// <summary>
 /// Pure lookup and watering controller decoupled from hotkeys and UI triggers.
-/// Shared by M1 hotkeys, M2 PhoneApp triggers, and M3 additive delivery.
+/// Shared by debug hotkeys, the Sprinklers PhoneApp, and future additive delivery.
 /// </summary>
 public static class SprinklerController
 {
@@ -170,6 +199,56 @@ public static class SprinklerController
     }
 
     /// <summary>
+    /// Returns every owned property that has at least one Overhead Sprinkler Head installed, sorted by name.
+    /// </summary>
+    public static List<PropertySprinklerInfo> GetOwnedPropertiesWithSprinklers()
+    {
+        var infos = new List<PropertySprinklerInfo>();
+        List<Property>? owned = Property.OwnedProperties;
+        if (owned == null)
+        {
+            return infos;
+        }
+
+        for (int i = 0; i < owned.Count; i++)
+        {
+            Property prop = owned[i];
+            if (prop == null)
+            {
+                continue;
+            }
+
+            CollectRacksAndContainers(prop, out List<ProceduralGridItem> heads, out HashSet<FloorRack> racks, out HashSet<GrowContainer> containers);
+            if (heads.Count == 0)
+            {
+                continue;
+            }
+
+            float avgMoisture = 1f;
+            if (containers.Count > 0)
+            {
+                float sum = 0f;
+                foreach (GrowContainer container in containers)
+                {
+                    sum += container.NormalizedMoistureAmount;
+                }
+                avgMoisture = sum / containers.Count;
+            }
+
+            infos.Add(new PropertySprinklerInfo(
+                prop,
+                prop.PropertyName,
+                heads.Count,
+                racks.Count,
+                containers.Count,
+                avgMoisture));
+        }
+
+        infos.Sort((a, b) => string.Compare(a.PropertyName, b.PropertyName, StringComparison.OrdinalIgnoreCase));
+        return infos;
+    }
+
+    /// <summary>
     /// Waters every GrowContainer under every Overhead Sprinkler Head in the given property.
     /// </summary>
     public static WaterSummary WaterProperty(Property property)
@@ -179,25 +258,11 @@ public static class SprinklerController
             throw new ArgumentNullException(nameof(property));
         }
 
-        List<ProceduralGridItem> heads = FindHeadsInProperty(property);
-        var racks = new HashSet<FloorRack>();
-        for (int i = 0; i < heads.Count; i++)
-        {
-            FloorRack? rack = GetParentRack(heads[i]);
-            if (rack != null)
-            {
-                racks.Add(rack);
-            }
-        }
-
-        var uniqueContainers = new HashSet<GrowContainer>();
-        foreach (FloorRack rack in racks)
-        {
-            foreach (GrowContainer container in GetContainersUnderRack(rack))
-            {
-                uniqueContainers.Add(container);
-            }
-        }
+        CollectRacksAndContainers(
+            property,
+            out List<ProceduralGridItem> heads,
+            out HashSet<FloorRack> racks,
+            out HashSet<GrowContainer> uniqueContainers);
 
         var results = new List<ContainerWaterResult>(uniqueContainers.Count);
         if (!InstanceFinder.IsServer)
@@ -233,6 +298,48 @@ public static class SprinklerController
             wateredCount,
             skippedNotServer: false,
             results);
+    }
+
+    /// <summary>
+    /// Waters every owned property that has at least one Overhead Sprinkler Head installed.
+    /// </summary>
+    public static List<WaterSummary> WaterAllOwnedProperties()
+    {
+        List<PropertySprinklerInfo> props = GetOwnedPropertiesWithSprinklers();
+        var summaries = new List<WaterSummary>(props.Count);
+        for (int i = 0; i < props.Count; i++)
+        {
+            summaries.Add(WaterProperty(props[i].Property));
+        }
+
+        return summaries;
+    }
+
+    private static void CollectRacksAndContainers(
+        Property property,
+        out List<ProceduralGridItem> heads,
+        out HashSet<FloorRack> racks,
+        out HashSet<GrowContainer> containers)
+    {
+        heads = FindHeadsInProperty(property);
+        racks = new HashSet<FloorRack>();
+        for (int i = 0; i < heads.Count; i++)
+        {
+            FloorRack? rack = GetParentRack(heads[i]);
+            if (rack != null)
+            {
+                racks.Add(rack);
+            }
+        }
+
+        containers = new HashSet<GrowContainer>();
+        foreach (FloorRack rack in racks)
+        {
+            foreach (GrowContainer container in GetContainersUnderRack(rack))
+            {
+                containers.Add(container);
+            }
+        }
     }
 
     private static void CollectContainersFromTile(Tile? tile, HashSet<GrowContainer> results)
