@@ -69,4 +69,15 @@ All findings below are **unverified** (inspected `github.com/ifBars/S1API` `stab
 
 - **Cloning a grow light:** `S1API.Items.Buildable.BuildableItemCreator.CloneFrom(string sourceItemId)` looks up `Registry.GetItem(sourceItemId)` as `BuildableItemDefinition` and constructs `BuildableItemDefinitionBuilder(buildableDef)`, which copies `BuildableDefinition.BuiltItem = buildableSource.BuiltItem`. Because `BuiltItem` is the `GrowLight` (`ProceduralGridItem`) prefab with `BuildHandler = BuildStart_ProceduralGrid`, `ProceduralTileType = Rack`, and `CoordinateFootprintTilePairs`, a cloned item keeps the exact Suspension Rack attachment behavior.
 - **Adding to Oscar's shop:** `S1API.Shops.ShopManager` provides `GetAllShops()`, `GetShopByName(string shopName)` (e.g. Oscar's Warehouse shop), and `Shop.AddItem(...)` (via `S1API.Shops.Shop` / `ShopIntegration`).
-- **Pot / water wrappers:** `S1API.Growing` wraps `MushroomBedInstance`, `PlantInstance`, `SeedCreator`, `SeedDefinition`, `SeedInstance`, `ShroomColonyInstance`, and `GrowContainerAdditives`, but has **no** wrapper for `Pot` or `GrowContainer` moisture/watering. Our mod will call `GrowContainer.ChangeMoistureAmount` and `GrowContainer.SyncMoistureData` directly (with `#if MONOMELON` / `#if IL2CPPMELON` namespace aliases in M2+).
+- **Pot / water wrappers:** `S1API.Growing` wraps `MushroomBedInstance`, `PlantInstance`, `SeedCreator`, `SeedDefinition`, `SeedInstance`, `ShroomColonyInstance`, and `GrowContainerAdditives`, but has **no** wrapper for `Pot` or `GrowContainer` moisture/watering. Our mod will call `GrowContainer.ChangeMoistureAmount` and `GrowContainer.SyncMoistureData` directly (with `#if MONOMELON` / `#if IL2CPPMELON` namespace aliases in M4).
+
+## Fertilization and storage shelves
+All findings below are **unverified** (static decompilation of Mono `Assembly-CSharp.dll` v0.4.7f12; awaiting live M3 verification).
+
+- **Additive definitions:** Additives (`fertilizer`, `pgr`, `speedgrow`) inherit `ScheduleOne.ItemFramework.AdditiveDefinition` (`: StorableItemDefinition`) and are registered in `Singleton<Registry>.Instance.GetAllItems()`.
+- **Container eligibility & application (`GrowContainer`):**
+  - `GrowContainer.AllowedAdditives` (`AdditiveDefinition[]`) lists which additives a pot/bed accepts.
+  - `GrowContainer.ContainsGrowable()` and `GrowContainer.GetGrowthProgressNormalized() < 1f` match `ApplyAdditiveToGrowContainerBehaviour` (skip empty or fully grown containers).
+  - `GrowContainer.CanApplyAdditive(AdditiveDefinition, out string invalidReason)` verifies soil is full (`NormalizedSoilAmount >= 1f`) and `!IsAdditiveApplied(additiveDef.ID)`.
+  - `GrowContainer.ApplyAdditive_Server(string additiveID)` (`[ServerRpc(RequireOwnership = false, RunLocally = true)]`) applies the additive, updates soil displays, and replicates via `ApplyAdditive_Client`.
+- **Property storage shelves:** `ScheduleOne.ObjectScripts.PlaceableStorageEntity` (`: GridItem`) exposes `public StorageEntity StorageEntity` (`ScheduleOne.Storage.StorageEntity`). Iterating `property.GetBuildablesOfType<PlaceableStorageEntity>()` gives every non-ghost storage rack in that property, whose `StorageEntity.ItemSlots` (`List<ItemSlot>`) support reading `ItemInstance.ID` / `Quantity` / `IsRemovalLocked` and consuming 1 bottle via `ItemSlot.ChangeQuantity(-1)`.
