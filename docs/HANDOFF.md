@@ -5,7 +5,7 @@
 |------|-------|
 | Repo (local only, no remote) | `E:\Sprinkler\S1-Overhead-Sprinkler` (open this folder in Antigravity) |
 | Coding agent | Antigravity, Gemini 4 Hydrogen at Medium (rules: `AGENTS.md`) |
-| Main game install (never committed, read-only for the agent) | `E:\SteamLibrary\steamapps\common\Schedule I`, on the `alternate` (Mono) branch during M0; switch back to the normal IL2CPP branch in M2 |
+| Main game install (never committed, read-only for the agent) | `E:\SteamLibrary\steamapps\common\Schedule I` (normal IL2CPP branch; `Il2CppAssemblies` generated 2026-11-25) |
 | Mono copy of the game, for decompiling (never committed, read-only) | `E:\Sprinkler\Schedule I Mono` (copied 2026-11-19) |
 | MelonLoader logs | `<game folder>\MelonLoader\Latest.log` |
 
@@ -17,25 +17,20 @@ update. Copy the whole game folder somewhere else (e.g. `E:\S1-modding\Schedule 
 ## Tool versions
 | Tool | Version |
 |------|---------|
-| Schedule I, main install | v0.4.7f12 Alternate (confirmed: main menu screenshot, 2026-11-19) |
+| Schedule I, main install | v0.4.7f12 Alternate (confirmed: main menu screenshot, 2026-11-19; switched to Mono branch 2026-11-25) |
 | Schedule I, Mono copy | v0.4.7f12 Alternate (confirmed: main menu screenshot, 2026-11-19); Unity 2022.3.62f2 |
-| MelonLoader | 0.7.x in the main install (exact: TODO, the agent records it; Josh installs it if missing) |
-| S1API Forked (ifBars) | 3.0.22 or newer (exact: TODO) |
-| .NET SDK | TODO (agent records it in the M0 report) |
+| MelonLoader | 0.7.3 |
+| S1API Forked (ifBars) | 3.2.3 |
+| .NET SDK | 10.0.404 |
 
 ## How it works now
-No code yet. The design is settled: an Overhead Sprinkler Head hangs on a Suspension Rack like a grow light, covers
-every pot under that one rack, and waters them all when the player activates it (`docs/DECISIONS.md` D1, D2, D4,
-D5; D5 replaced automatic watering). The
-plan is to clone a grow light with S1API and reuse the vanilla sprinklers' water-adding code. Whether that works
-is what M0 finds out. Research so far: `docs/research/INDEX.md`.
+M1–M5 (`v1.0.0`) are complete and verified live on both Mono and IL2CPP. All technical discoveries and reusable patterns are documented in `docs/research/game-systems.md` and `docs/research/modding-lessons.md`. Nexus-ready release zips live under `dist/`, and copy-paste release copy lives in `docs/NEXUS-RELEASE.md`.
 
 ## Where it stops
-Nothing to test yet.
+Ready to merge `m5-release` → `main`, tag `v1.0.0`, and publish to Nexus Mods and GitHub.
 
 ## In progress
-- Antigravity: `docs/prompts/M0-research.md` on branch `m0-research`.
-  Report (when done): `docs/reports/M0-research.md` on that branch.
+- Release ready on branch `m5-release`.
 
 ## Rules
 - Claude coordinates, reviews, merges and tags. Antigravity researches and codes, and never merges.

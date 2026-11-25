@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <!-- Path to the Managed folder of your Mono Schedule I copy (e.g. Steam alternate branch) -->
+    <ScheduleIManagedDir>C:\Path\To\Schedule I Mono\Schedule I_Data\Managed</ScheduleIManagedDir>
+    <!-- Path to MelonLoader\Il2CppAssemblies in your normal IL2CPP Schedule I install -->
+    <ScheduleIIl2CppDir>C:\Path\To\Schedule I\MelonLoader\Il2CppAssemblies</ScheduleIIl2CppDir>
+    <!-- Path to MelonLoader\net6 in your normal IL2CPP Schedule I install -->
+    <ScheduleIMelonNet6Dir>C:\Path\To\Schedule I\MelonLoader\net6</ScheduleIMelonNet6Dir>
+  </PropertyGroup>
+</Project>
