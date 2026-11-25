@@ -88,8 +88,11 @@ public static class SprinklerEffects
                 continue;
             }
 
+            Transform? sprayTip = head.transform.Find("OverheadSprinklerNozzle/SprayTip");
             var fxGo = new GameObject("OverheadSprinklerSprayFx");
-            fxGo.transform.position = head.transform.position + Vector3.down * 0.12f;
+            fxGo.transform.position = sprayTip != null
+                ? sprayTip.position
+                : head.transform.position + Vector3.down * 0.14f;
             fxGo.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
 
             ParticleSystem? ps = null;
@@ -163,10 +166,10 @@ public static class SprinklerEffects
         ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
         ParticleSystem.MainModule main = ps.main;
-        main.startLifetime = 0.85f;
-        main.startSpeed = 2.4f;
-        main.startSize = isAdditiveBurst ? 0.065f : 0.055f;
-        main.maxParticles = 300;
+        main.startLifetime = 0.72f;
+        main.startSpeed = 2.8f;
+        main.startSize = isAdditiveBurst ? 0.032f : 0.026f;
+        main.maxParticles = 450;
         main.startColor = new ParticleSystem.MinMaxGradient(mistColor);
 #if !IL2CPP
         main.loop = true;
@@ -180,15 +183,15 @@ public static class SprinklerEffects
 #endif
 
         ParticleSystem.EmissionModule emission = ps.emission;
-        emission.rateOverTime = isAdditiveBurst ? 75f : 110f;
+        emission.rateOverTime = isAdditiveBurst ? 130f : 180f;
 #if !IL2CPP
         emission.enabled = true;
 #endif
 
         ParticleSystem.ShapeModule shape = ps.shape;
         shape.shapeType = ParticleSystemShapeType.Cone;
-        shape.angle = 26f;
-        shape.radius = 0.22f;
+        shape.angle = 22f;
+        shape.radius = 0.012f;
 #if !IL2CPP
         shape.enabled = true;
 

@@ -182,7 +182,7 @@ public sealed class OverheadSprinklerMod : MelonMod
                 .WithBasicInfo(
                     SprinklerController.ItemId,
                     "Overhead Sprinkler Head",
-                    "High-end overhead grow light with an integrated sprinkler head. Hangs on a Suspension Rack and waters every pot underneath via the Sprinklers phone app.",
+                    "Full Spectrum Grow Light with an integrated overhead sprinkler nozzle. Hangs on a Suspension Rack and automatically chains with other heads in the same property to water pots and apply additives (Fertilizer, PGR, Speed Grow) from your storage shelves via the Sprinklers phone app.",
                     ItemCategory.Growing)
                 .WithPricing(price, 0.5f)
                 .Build();
