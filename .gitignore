@@ -21,3 +21,6 @@ Il2CppAssemblies/
 .idea/
 Thumbs.db
 .DS_Store
+
+# Local coordinator workflow scripts: keep on your machine, not in the public repo
+scripts/
