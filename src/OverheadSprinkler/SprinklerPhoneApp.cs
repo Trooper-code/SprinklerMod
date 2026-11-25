@@ -2,10 +2,15 @@ using System;
 using System.Collections.Generic;
 using MelonLoader;
 using S1API.UI;
-using ScheduleOne.ItemFramework;
-using ScheduleOne.Property;
 using UnityEngine;
 using UnityEngine.UI;
+#if IL2CPP
+using Il2CppScheduleOne.ItemFramework;
+using Il2CppScheduleOne.Property;
+#else
+using ScheduleOne.ItemFramework;
+using ScheduleOne.Property;
+#endif
 using S1PhoneApp = S1API.PhoneApp.PhoneApp;
 
 namespace OverheadSprinkler;
@@ -17,6 +22,7 @@ namespace OverheadSprinkler;
 /// </summary>
 public sealed class SprinklerPhoneApp : S1PhoneApp
 {
+    private static SprinklerPhoneApp? _activeInstance;
     private static Sprite? _cachedIconSprite;
     private static Sprite? _cachedRoundedSprite;
 
@@ -60,12 +66,17 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
     protected override void OnCreated()
     {
         base.OnCreated();
+        _activeInstance = this;
         _stateChangedHandler = OnControllerStateChanged;
         SprinklerController.OnSprinklerStateChanged += _stateChangedHandler;
     }
 
     protected override void OnDestroyed()
     {
+        if (_activeInstance == this)
+        {
+            _activeInstance = null;
+        }
         if (_stateChangedHandler != null)
         {
             SprinklerController.OnSprinklerStateChanged -= _stateChangedHandler;
@@ -116,8 +127,7 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         BuildPropertyListHost(safeArea.transform);
         BuildFooterBar(safeArea.transform, font);
 
-        SprinklerAppRefreshHook refreshHook = container.AddComponent<SprinklerAppRefreshHook>();
-        refreshHook.OnShown = RefreshList;
+        container.AddComponent<SprinklerAppRefreshHook>();
 
         RefreshList();
     }
@@ -192,14 +202,14 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         _headerSummaryText.gameObject.AddComponent<LayoutElement>().preferredHeight = 18f;
 
         Button refreshBtn = CreateRoundedButton("RefreshButton", "Refresh", header.transform, font, BtnSecondary, 96f, 38f, 14, FontStyle.Normal);
-        refreshBtn.onClick.AddListener(() =>
+        GameCompat.AddButtonListener(refreshBtn, () =>
         {
             RefreshList();
             SetStatus("Refreshed sprinkler and storage status.");
         });
 
         _waterAllButton = CreateRoundedButton("WaterAllButton", "Water All", header.transform, font, BtnPrimary, 124f, 38f, 14, FontStyle.Bold);
-        _waterAllButton.onClick.AddListener(OnWaterAllClicked);
+        GameCompat.AddButtonListener(_waterAllButton, OnWaterAllClicked);
     }
 
     private void BuildPropertyListHost(Transform parent)
@@ -471,7 +481,7 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         waterBtn.interactable = !isWatering;
 
         Property targetProperty = info.Property;
-        waterBtn.onClick.AddListener(() => OnWaterPropertyClicked(targetProperty));
+        GameCompat.AddButtonListener(waterBtn, () => OnWaterPropertyClicked(targetProperty));
 
         if (additives == null || additives.Count == 0)
         {
@@ -530,7 +540,7 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
             addBtn.interactable = canApply;
 
             AdditiveDefinition targetDef = entry.Definition;
-            addBtn.onClick.AddListener(() => OnApplyAdditiveClicked(targetProperty, targetDef));
+            GameCompat.AddButtonListener(addBtn, () => OnApplyAdditiveClicked(targetProperty, targetDef));
         }
     }
 
@@ -900,13 +910,18 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f));
     }
 
+#if IL2CPP
+    [RegisterTypeInIl2Cpp]
+#endif
     private sealed class SprinklerAppRefreshHook : MonoBehaviour
     {
-        public Action? OnShown;
+#if IL2CPP
+        public SprinklerAppRefreshHook(IntPtr ptr) : base(ptr) { }
+#endif
 
         private void OnEnable()
         {
-            OnShown?.Invoke();
+            _activeInstance?.RefreshList();
         }
     }
 }

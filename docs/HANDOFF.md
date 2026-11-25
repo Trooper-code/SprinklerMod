@@ -5,7 +5,7 @@
 |------|-------|
 | Repo (local only, no remote) | `E:\Sprinkler\S1-Overhead-Sprinkler` (open this folder in Antigravity) |
 | Coding agent | Antigravity, Gemini 4 Hydrogen at Medium (rules: `AGENTS.md`) |
-| Main game install (never committed, read-only for the agent) | `E:\SteamLibrary\steamapps\common\Schedule I`, on the `alternate` (Mono) branch during M0; switch back to the normal IL2CPP branch in M2 |
+| Main game install (never committed, read-only for the agent) | `E:\SteamLibrary\steamapps\common\Schedule I` (normal IL2CPP branch; `Il2CppAssemblies` generated 2026-11-25) |
 | Mono copy of the game, for decompiling (never committed, read-only) | `E:\Sprinkler\Schedule I Mono` (copied 2026-11-19) |
 | MelonLoader logs | `<game folder>\MelonLoader\Latest.log` |
 
@@ -24,13 +24,13 @@ update. Copy the whole game folder somewhere else (e.g. `E:\S1-modding\Schedule 
 | .NET SDK | 10.0.404 |
 
 ## How it works now
-M1 PoC passed live testing in the Barn (`MelonLoader/Latest.log`, 2026-11-25): cloning `fullspectrumgrowlight` via S1API hangs on `FloorRack`, and `SprinklerController` waters pots across multiple racks at once. M2 adds the $1,500 Oscar's Warehouse listing, save/load support, and the "Sprinklers" S1API `PhoneApp` (`docs/superpowers/specs/2026-11-25-overhead-sprinkler-design.md`, `docs/DECISIONS.md` D6). Research so far: `docs/research/INDEX.md`.
+M1–M3 and M4a (particles, equalized vanilla audio, 5-segment watering, `MelonPreferences`) are confirmed live on Mono. `OverheadSprinkler.csproj` now dual-targets both Mono (`netstandard2.1` → `OverheadSprinkler.Mono.dll`) and IL2CPP (`net6.0` → `OverheadSprinkler.IL2CPP.dll`) on branch `m4-polish`. Research so far: `docs/research/INDEX.md`.
 
 ## Where it stops
-M2 ready for Windows testing (Oscar's Warehouse listing, Phone App watering, and save/reload persistence).
+M4b IL2CPP build ready for live Windows testing on the normal IL2CPP Steam branch.
 
 ## In progress
-- Antigravity: M2 on branch `m2-phone-app`.
+- Antigravity: M4b dual Mono + IL2CPP build on branch `m4-polish`.
 
 ## Rules
 - Claude coordinates, reviews, merges and tags. Antigravity researches and codes, and never merges.

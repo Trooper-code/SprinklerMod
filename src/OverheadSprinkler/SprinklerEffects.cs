@@ -2,6 +2,16 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using MelonLoader;
+using UnityEngine;
+#if IL2CPP
+using Il2CppScheduleOne;
+using Il2CppScheduleOne.Audio;
+using Il2CppScheduleOne.Core.Audio;
+using Il2CppScheduleOne.DevUtilities;
+using Il2CppScheduleOne.EntityFramework;
+using Il2CppScheduleOne.ItemFramework;
+using Il2CppScheduleOne.ObjectScripts;
+#else
 using ScheduleOne;
 using ScheduleOne.Audio;
 using ScheduleOne.Core.Audio;
@@ -9,12 +19,12 @@ using ScheduleOne.DevUtilities;
 using ScheduleOne.EntityFramework;
 using ScheduleOne.ItemFramework;
 using ScheduleOne.ObjectScripts;
-using UnityEngine;
+#endif
 
 namespace OverheadSprinkler;
 
 /// <summary>
-/// Spawns temporary downward spray particles and vanilla sprinkler audio on
+/// Spawns temporary downward spray particles and equalized vanilla sprinkler audio on
 /// Overhead Sprinkler Heads during watering or additive bursts.
 /// </summary>
 public static class SprinklerEffects
@@ -153,28 +163,34 @@ public static class SprinklerEffects
         ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
         ParticleSystem.MainModule main = ps.main;
-        main.loop = true;
-        main.playOnAwake = false;
-        main.duration = 2f;
         main.startLifetime = 0.85f;
         main.startSpeed = 2.4f;
         main.startSize = isAdditiveBurst ? 0.065f : 0.055f;
+        main.maxParticles = 300;
+        main.startColor = new ParticleSystem.MinMaxGradient(mistColor);
+#if !IL2CPP
+        main.loop = true;
+        main.playOnAwake = false;
+        main.duration = 2f;
         main.gravityModifier = 0.45f;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
-        main.maxParticles = 300;
         main.startColor = new ParticleSystem.MinMaxGradient(
             mistColor,
             new Color(mistColor.r, mistColor.g, mistColor.b, mistColor.a * 0.65f));
+#endif
 
         ParticleSystem.EmissionModule emission = ps.emission;
-        emission.enabled = true;
         emission.rateOverTime = isAdditiveBurst ? 75f : 110f;
+#if !IL2CPP
+        emission.enabled = true;
+#endif
 
         ParticleSystem.ShapeModule shape = ps.shape;
-        shape.enabled = true;
         shape.shapeType = ParticleSystemShapeType.Cone;
         shape.angle = 26f;
         shape.radius = 0.22f;
+#if !IL2CPP
+        shape.enabled = true;
 
         ParticleSystem.ColorOverLifetimeModule col = ps.colorOverLifetime;
         col.enabled = true;
@@ -192,6 +208,7 @@ public static class SprinklerEffects
                 new GradientAlphaKey(0f, 1f),
             });
         col.color = new ParticleSystem.MinMaxGradient(gradient);
+#endif
 
         ParticleSystemRenderer renderer = host.GetComponent<ParticleSystemRenderer>();
         if (renderer != null)
@@ -250,33 +267,37 @@ public static class SprinklerEffects
                 return;
             }
 
-            List<ItemDefinition> items = Singleton<Registry>.Instance.GetAllItems();
+            var items = Singleton<Registry>.Instance.GetAllItems();
             for (int i = 0; i < items.Count; i++)
             {
-                if (items[i] is BuildableItemDefinition buildable && buildable.BuiltItem is Sprinkler sprinkler)
+                BuildableItemDefinition? buildable = GameCompat.TryCast<BuildableItemDefinition>(items[i]);
+                Sprinkler? sprinkler = buildable != null ? GameCompat.TryCast<Sprinkler>(buildable.BuiltItem) : null;
+                if (sprinkler == null)
                 {
-                    if (_clickClip == null && sprinkler.ClickSound != null)
-                    {
-                        AudioSource? clickSrc = sprinkler.ClickSound.GetComponent<AudioSource>();
-                        if (clickSrc != null && clickSrc.clip != null)
-                        {
-                            _clickClip = clickSrc.clip;
-                        }
-                    }
+                    continue;
+                }
 
-                    if (_waterClip == null && sprinkler.WaterSound != null)
+                if (_clickClip == null && sprinkler.ClickSound != null)
+                {
+                    AudioSource? clickSrc = sprinkler.ClickSound.GetComponent<AudioSource>();
+                    if (clickSrc != null && clickSrc.clip != null)
                     {
-                        AudioSource? waterSrc = sprinkler.WaterSound.GetComponent<AudioSource>();
-                        if (waterSrc != null && waterSrc.clip != null)
-                        {
-                            _waterClip = waterSrc.clip;
-                        }
+                        _clickClip = clickSrc.clip;
                     }
+                }
 
-                    if (_clickClip != null && _waterClip != null)
+                if (_waterClip == null && sprinkler.WaterSound != null)
+                {
+                    AudioSource? waterSrc = sprinkler.WaterSound.GetComponent<AudioSource>();
+                    if (waterSrc != null && waterSrc.clip != null)
                     {
-                        break;
+                        _waterClip = waterSrc.clip;
                     }
+                }
+
+                if (_clickClip != null && _waterClip != null)
+                {
+                    break;
                 }
             }
         }
