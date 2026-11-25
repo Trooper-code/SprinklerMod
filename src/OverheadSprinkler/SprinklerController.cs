@@ -2,10 +2,14 @@ using System;
 using System.Collections.Generic;
 using FishNet;
 using FishNet.Object;
+using ScheduleOne;
+using ScheduleOne.DevUtilities;
 using ScheduleOne.EntityFramework;
 using ScheduleOne.Growing;
+using ScheduleOne.ItemFramework;
 using ScheduleOne.ObjectScripts;
 using ScheduleOne.Property;
+using ScheduleOne.Storage;
 using ScheduleOne.Tiles;
 
 namespace OverheadSprinkler;
@@ -30,7 +34,25 @@ public readonly struct ContainerWaterResult
 }
 
 /// <summary>
-/// Snapshot of an owned property's installed overhead sprinklers and covered grow containers.
+/// Stock and eligibility snapshot for one additive type within a property.
+/// </summary>
+public readonly struct AdditiveStockEntry
+{
+    public AdditiveStockEntry(AdditiveDefinition definition, int storageCount, int eligibleCount)
+    {
+        Definition = definition;
+        StorageCount = storageCount;
+        EligibleCount = eligibleCount;
+    }
+
+    public AdditiveDefinition Definition { get; }
+    public int StorageCount { get; }
+    public int EligibleCount { get; }
+}
+
+/// <summary>
+/// Snapshot of an owned property's installed overhead sprinklers, covered grow containers,
+/// and available additive stock in property storage.
 /// </summary>
 public sealed class PropertySprinklerInfo
 {
@@ -40,7 +62,8 @@ public sealed class PropertySprinklerInfo
         int headCount,
         int rackCount,
         int containerCount,
-        float averageMoistureNormalized)
+        float averageMoistureNormalized,
+        IReadOnlyList<AdditiveStockEntry> additives)
     {
         Property = property;
         PropertyName = propertyName;
@@ -48,6 +71,7 @@ public sealed class PropertySprinklerInfo
         RackCount = rackCount;
         ContainerCount = containerCount;
         AverageMoistureNormalized = averageMoistureNormalized;
+        Additives = additives;
     }
 
     public Property Property { get; }
@@ -56,6 +80,7 @@ public sealed class PropertySprinklerInfo
     public int RackCount { get; }
     public int ContainerCount { get; }
     public float AverageMoistureNormalized { get; }
+    public IReadOnlyList<AdditiveStockEntry> Additives { get; }
 }
 
 /// <summary>
@@ -91,8 +116,40 @@ public sealed class WaterSummary
 }
 
 /// <summary>
-/// Pure lookup and watering controller decoupled from hotkeys and UI triggers.
-/// Shared by debug hotkeys, the Sprinklers PhoneApp, and future additive delivery.
+/// Summary of applying one additive type across a property's sprinkler-covered containers.
+/// </summary>
+public sealed class AdditiveApplySummary
+{
+    public AdditiveApplySummary(
+        string propertyName,
+        string additiveName,
+        int appliedCount,
+        int eligibleCount,
+        int remainingInStorage,
+        bool ranOutOfStock,
+        bool skippedNotServer)
+    {
+        PropertyName = propertyName;
+        AdditiveName = additiveName;
+        AppliedCount = appliedCount;
+        EligibleCount = eligibleCount;
+        RemainingInStorage = remainingInStorage;
+        RanOutOfStock = ranOutOfStock;
+        SkippedNotServer = skippedNotServer;
+    }
+
+    public string PropertyName { get; }
+    public string AdditiveName { get; }
+    public int AppliedCount { get; }
+    public int EligibleCount { get; }
+    public int RemainingInStorage { get; }
+    public bool RanOutOfStock { get; }
+    public bool SkippedNotServer { get; }
+}
+
+/// <summary>
+/// Pure lookup, watering, and additive-delivery controller decoupled from hotkeys and UI triggers.
+/// Shared by debug hotkeys and the Sprinklers PhoneApp.
 /// </summary>
 public static class SprinklerController
 {
@@ -100,6 +157,13 @@ public static class SprinklerController
     /// Item ID registered for the Overhead Sprinkler Head.
     /// </summary>
     public const string ItemId = "overhead_sprinkler_head";
+
+    private static readonly string[] PreferredAdditiveOrder =
+    {
+        "fertilizer",
+        "pgr",
+        "speedgrow",
+    };
 
     /// <summary>
     /// Finds all placed, non-ghost Overhead Sprinkler Heads in the given property.
@@ -199,6 +263,170 @@ public static class SprinklerController
     }
 
     /// <summary>
+    /// Returns all registered AdditiveDefinition items ordered Fertilizer, PGR, Speed Grow, then alphabetically.
+    /// </summary>
+    public static List<AdditiveDefinition> GetAllAdditives()
+    {
+        var additives = new List<AdditiveDefinition>();
+        if (!Singleton<Registry>.InstanceExists)
+        {
+            return additives;
+        }
+
+        List<ItemDefinition> allItems = Singleton<Registry>.Instance.GetAllItems();
+        for (int i = 0; i < allItems.Count; i++)
+        {
+            if (allItems[i] is AdditiveDefinition additiveDef)
+            {
+                additives.Add(additiveDef);
+            }
+        }
+
+        additives.Sort((a, b) =>
+        {
+            int rankA = GetAdditiveSortRank(a.ID);
+            int rankB = GetAdditiveSortRank(b.ID);
+            if (rankA != rankB)
+            {
+                return rankA.CompareTo(rankB);
+            }
+
+            return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+        });
+
+        return additives;
+    }
+
+    /// <summary>
+    /// Returns all non-ghost StorageEntity containers belonging to placeable storage shelves in the property.
+    /// </summary>
+    public static List<StorageEntity> GetPropertyStorageEntities(Property property)
+    {
+        var storages = new List<StorageEntity>();
+        if (property == null)
+        {
+            return storages;
+        }
+
+        var seen = new HashSet<StorageEntity>();
+        List<PlaceableStorageEntity> placeables = property.GetBuildablesOfType<PlaceableStorageEntity>();
+        for (int i = 0; i < placeables.Count; i++)
+        {
+            PlaceableStorageEntity placeable = placeables[i];
+            if (placeable == null || placeable.isGhost || placeable.StorageEntity == null)
+            {
+                continue;
+            }
+
+            if (seen.Add(placeable.StorageEntity))
+            {
+                storages.Add(placeable.StorageEntity);
+            }
+        }
+
+        return storages;
+    }
+
+    /// <summary>
+    /// Counts how many bottles/units of an item ID are available across storage shelves in the property.
+    /// </summary>
+    public static int CountItemInPropertyStorage(Property property, string itemId)
+    {
+        if (property == null || string.IsNullOrEmpty(itemId))
+        {
+            return 0;
+        }
+
+        int total = 0;
+        List<StorageEntity> storages = GetPropertyStorageEntities(property);
+        for (int i = 0; i < storages.Count; i++)
+        {
+            List<ItemSlot>? slots = storages[i].ItemSlots;
+            if (slots == null)
+            {
+                continue;
+            }
+
+            for (int s = 0; s < slots.Count; s++)
+            {
+                ItemSlot slot = slots[s];
+                if (slot == null || slot.IsRemovalLocked || slot.ItemInstance == null || slot.Quantity <= 0)
+                {
+                    continue;
+                }
+
+                if (string.Equals(slot.ItemInstance.ID, itemId, StringComparison.Ordinal))
+                {
+                    total += slot.Quantity;
+                }
+            }
+        }
+
+        return total;
+    }
+
+    /// <summary>
+    /// Consumes 1 unit of an item ID from storage shelves in the property, returning true on success.
+    /// </summary>
+    public static bool TryConsumeOneFromPropertyStorage(Property property, string itemId)
+    {
+        if (property == null || string.IsNullOrEmpty(itemId))
+        {
+            return false;
+        }
+
+        List<StorageEntity> storages = GetPropertyStorageEntities(property);
+        for (int i = 0; i < storages.Count; i++)
+        {
+            List<ItemSlot>? slots = storages[i].ItemSlots;
+            if (slots == null)
+            {
+                continue;
+            }
+
+            for (int s = 0; s < slots.Count; s++)
+            {
+                ItemSlot slot = slots[s];
+                if (slot == null || slot.IsRemovalLocked || slot.ItemInstance == null || slot.Quantity <= 0)
+                {
+                    continue;
+                }
+
+                if (string.Equals(slot.ItemInstance.ID, itemId, StringComparison.Ordinal))
+                {
+                    slot.ChangeQuantity(-1);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Checks whether a grow container can accept the given additive right now.
+    /// </summary>
+    public static bool IsContainerEligibleForAdditive(GrowContainer container, AdditiveDefinition additiveDef)
+    {
+        if (container == null || container.isGhost || additiveDef == null)
+        {
+            return false;
+        }
+
+        if (!container.ContainsGrowable() || container.GetGrowthProgressNormalized() >= 1f)
+        {
+            return false;
+        }
+
+        if (!IsAdditiveAllowed(container, additiveDef.ID))
+        {
+            return false;
+        }
+
+        return container.CanApplyAdditive(additiveDef, out _);
+    }
+
+    /// <summary>
     /// Returns every owned property that has at least one Overhead Sprinkler Head installed, sorted by name.
     /// </summary>
     public static List<PropertySprinklerInfo> GetOwnedPropertiesWithSprinklers()
@@ -209,6 +437,8 @@ public static class SprinklerController
         {
             return infos;
         }
+
+        List<AdditiveDefinition> allAdditives = GetAllAdditives();
 
         for (int i = 0; i < owned.Count; i++)
         {
@@ -235,13 +465,31 @@ public static class SprinklerController
                 avgMoisture = sum / containers.Count;
             }
 
+            var stockEntries = new List<AdditiveStockEntry>(allAdditives.Count);
+            for (int a = 0; a < allAdditives.Count; a++)
+            {
+                AdditiveDefinition additiveDef = allAdditives[a];
+                int storageCount = CountItemInPropertyStorage(prop, additiveDef.ID);
+                int eligibleCount = 0;
+                foreach (GrowContainer container in containers)
+                {
+                    if (IsContainerEligibleForAdditive(container, additiveDef))
+                    {
+                        eligibleCount++;
+                    }
+                }
+
+                stockEntries.Add(new AdditiveStockEntry(additiveDef, storageCount, eligibleCount));
+            }
+
             infos.Add(new PropertySprinklerInfo(
                 prop,
                 prop.PropertyName,
                 heads.Count,
                 racks.Count,
                 containers.Count,
-                avgMoisture));
+                avgMoisture,
+                stockEntries));
         }
 
         infos.Sort((a, b) => string.Compare(a.PropertyName, b.PropertyName, StringComparison.OrdinalIgnoreCase));
@@ -313,6 +561,111 @@ public static class SprinklerController
         }
 
         return summaries;
+    }
+
+    /// <summary>
+    /// Consumes additive bottles from property storage and applies the additive to eligible
+    /// sprinkler-covered GrowContainers in the property.
+    /// </summary>
+    public static AdditiveApplySummary ApplyAdditiveToProperty(Property property, AdditiveDefinition additiveDef)
+    {
+        if (property == null)
+        {
+            throw new ArgumentNullException(nameof(property));
+        }
+        if (additiveDef == null)
+        {
+            throw new ArgumentNullException(nameof(additiveDef));
+        }
+
+        CollectRacksAndContainers(
+            property,
+            out _,
+            out _,
+            out HashSet<GrowContainer> uniqueContainers);
+
+        var eligible = new List<GrowContainer>();
+        foreach (GrowContainer container in uniqueContainers)
+        {
+            if (IsContainerEligibleForAdditive(container, additiveDef))
+            {
+                eligible.Add(container);
+            }
+        }
+
+        if (!InstanceFinder.IsServer)
+        {
+            int currentStock = CountItemInPropertyStorage(property, additiveDef.ID);
+            return new AdditiveApplySummary(
+                property.PropertyName,
+                additiveDef.Name,
+                0,
+                eligible.Count,
+                currentStock,
+                ranOutOfStock: false,
+                skippedNotServer: true);
+        }
+
+        int appliedCount = 0;
+        bool ranOutOfStock = false;
+        for (int i = 0; i < eligible.Count; i++)
+        {
+            if (!TryConsumeOneFromPropertyStorage(property, additiveDef.ID))
+            {
+                ranOutOfStock = true;
+                break;
+            }
+
+            eligible[i].ApplyAdditive_Server(additiveDef.ID);
+            appliedCount++;
+        }
+
+        int remaining = CountItemInPropertyStorage(property, additiveDef.ID);
+        return new AdditiveApplySummary(
+            property.PropertyName,
+            additiveDef.Name,
+            appliedCount,
+            eligible.Count,
+            remaining,
+            ranOutOfStock,
+            skippedNotServer: false);
+    }
+
+    private static int GetAdditiveSortRank(string? additiveId)
+    {
+        if (string.IsNullOrEmpty(additiveId))
+        {
+            return PreferredAdditiveOrder.Length;
+        }
+
+        for (int i = 0; i < PreferredAdditiveOrder.Length; i++)
+        {
+            if (string.Equals(additiveId, PreferredAdditiveOrder[i], StringComparison.OrdinalIgnoreCase))
+            {
+                return i;
+            }
+        }
+
+        return PreferredAdditiveOrder.Length;
+    }
+
+    private static bool IsAdditiveAllowed(GrowContainer container, string additiveId)
+    {
+        if (container.AllowedAdditives == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < container.AllowedAdditives.Length; i++)
+        {
+            AdditiveDefinition allowed = container.AllowedAdditives[i];
+            if (allowed != null && string.Equals(allowed.ID, additiveId, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void CollectRacksAndContainers(

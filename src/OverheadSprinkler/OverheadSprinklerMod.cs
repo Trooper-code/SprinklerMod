@@ -19,7 +19,7 @@ using S1BuildableItemCreator = S1API.Items.Buildable.BuildableItemCreator;
 using S1BuildableItemDefinition = S1API.Items.Buildable.BuildableItemDefinition;
 using S1ItemDefinition = S1API.Items.ItemDefinition;
 
-[assembly: MelonInfo(typeof(OverheadSprinkler.OverheadSprinklerMod), "OverheadSprinkler", "0.2.0", "Trooper-code")]
+[assembly: MelonInfo(typeof(OverheadSprinkler.OverheadSprinklerMod), "OverheadSprinkler", "0.3.0", "Trooper-code")]
 [assembly: MelonGame("TVGS", "Schedule I")]
 
 namespace OverheadSprinkler;
@@ -50,7 +50,7 @@ public sealed class OverheadSprinklerMod : MelonMod
     {
         GameLifecycle.OnPreLoad += OnPreLoad;
         GameLifecycle.OnLoadComplete += OnLoadComplete;
-        LoggerInstance.Msg("OverheadSprinkler v0.2.0 loaded.");
+        LoggerInstance.Msg("OverheadSprinkler v0.3.0 loaded.");
     }
 
     public override void OnSceneWasInitialized(int buildIndex, string sceneName)

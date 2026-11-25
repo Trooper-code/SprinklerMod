@@ -13,4 +13,5 @@ One line per topic, pointing to where it lives. Look things up here first. Check
 | How placed items and rack attachments are saved | [game-systems.md § Saving placed items](game-systems.md#saving-placed-items) | unverified (M0 static) |
 | How the player activates an item hanging on the rack | [game-systems.md § Activating rack items](game-systems.md#activating-rack-items) | unverified (M0 static) |
 | What S1API can do for us (cloning buildables, shops) | [game-systems.md § S1API support](game-systems.md#s1api-support) | unverified (M0 static) |
+| Fertilization, additives, and property storage shelves | [game-systems.md § Fertilization and storage shelves](game-systems.md#fertilization-and-storage-shelves) | unverified (M3 static) |
 | M1 Overhead Sprinkler Head design | [m1-design.md](m1-design.md) | ready for M1 |

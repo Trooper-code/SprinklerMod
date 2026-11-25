@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using MelonLoader;
 using S1API.UI;
+using ScheduleOne.ItemFramework;
 using ScheduleOne.Property;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,8 +12,8 @@ namespace OverheadSprinkler;
 
 /// <summary>
 /// In-game "Sprinklers" phone app built on S1API.PhoneApp.
-/// Presents a responsive smart-irrigation dashboard for every owned property
-/// with Overhead Sprinkler Heads installed.
+/// Presents a smart-irrigation dashboard for every owned property with
+/// Overhead Sprinkler Heads installed, including watering and property-storage additives.
 /// </summary>
 public sealed class SprinklerPhoneApp : S1PhoneApp
 {
@@ -23,6 +24,7 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
     private static readonly Color BgRoot = new(0.055f, 0.078f, 0.106f, 1f);
     private static readonly Color CardHeader = new(0.082f, 0.133f, 0.188f, 1f);
     private static readonly Color CardProperty = new(0.090f, 0.129f, 0.173f, 1f);
+    private static readonly Color DividerLine = new(0.122f, 0.173f, 0.231f, 1f);
     private static readonly Color FooterBg = new(0.071f, 0.102f, 0.141f, 1f);
     private static readonly Color TrackBg = new(0.043f, 0.063f, 0.090f, 1f);
 
@@ -30,6 +32,12 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
     private static readonly Color BtnPrimary = new(0.106f, 0.541f, 0.902f, 1f);
     private static readonly Color BtnSecondary = new(0.141f, 0.204f, 0.278f, 1f);
     private static readonly Color BtnTopUp = new(0.129f, 0.478f, 0.408f, 1f);
+
+    private static readonly Color BtnFertilizer = new(0.133f, 0.478f, 0.294f, 1f);
+    private static readonly Color BtnPgr = new(0.612f, 0.420f, 0.122f, 1f);
+    private static readonly Color BtnSpeedGrow = new(0.380f, 0.275f, 0.659f, 1f);
+    private static readonly Color BtnAdditiveOther = new(0.165f, 0.376f, 0.471f, 1f);
+    private static readonly Color BtnDisabled = new(0.141f, 0.176f, 0.220f, 1f);
 
     private static readonly Color StatusDry = new(0.878f, 0.322f, 0.322f, 1f);
     private static readonly Color StatusLow = new(0.910f, 0.659f, 0.220f, 1f);
@@ -64,10 +72,8 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
     {
         Font font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
-        // Full-screen background
         GameObject background = UIFactory.Panel("SprinklerAppBackground", container.transform, BgRoot, fullAnchor: true);
 
-        // Safe-area root so nothing clips against the phone bezel
         GameObject safeArea = new("SafeArea");
         safeArea.transform.SetParent(background.transform, false);
         RectTransform safeRect = safeArea.AddComponent<RectTransform>();
@@ -111,7 +117,6 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         row.childForceExpandWidth = false;
         row.childForceExpandHeight = false;
 
-        // Subtle 2px cyan accent line along the bottom of the header card
         GameObject accentLine = new("HeaderAccentLine");
         accentLine.transform.SetParent(header.transform, false);
         RectTransform accentRect = accentLine.AddComponent<RectTransform>();
@@ -125,7 +130,6 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         LayoutElement accentIgnore = accentLine.AddComponent<LayoutElement>();
         accentIgnore.ignoreLayout = true;
 
-        // App icon
         GameObject iconGo = new("HeaderIcon");
         iconGo.transform.SetParent(header.transform, false);
         Image iconImg = iconGo.AddComponent<Image>();
@@ -137,7 +141,6 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         iconLe.preferredWidth = 38f;
         iconLe.preferredHeight = 38f;
 
-        // Title + live summary stack
         GameObject titleCol = new("TitleStack");
         titleCol.transform.SetParent(header.transform, false);
         LayoutElement titleColLe = titleCol.AddComponent<LayoutElement>();
@@ -165,12 +168,11 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
             TextAnchor.MiddleLeft);
         _headerSummaryText.gameObject.AddComponent<LayoutElement>().preferredHeight = 18f;
 
-        // Action buttons
         Button refreshBtn = CreateRoundedButton("RefreshButton", "Refresh", header.transform, font, BtnSecondary, 96f, 38f, 14, FontStyle.Normal);
         refreshBtn.onClick.AddListener(() =>
         {
             RefreshList();
-            SetStatus("Refreshed sprinkler status.");
+            SetStatus("Refreshed sprinkler and storage status.");
         });
 
         _waterAllButton = CreateRoundedButton("WaterAllButton", "Water All", header.transform, font, BtnPrimary, 124f, 38f, 14, FontStyle.Bold);
@@ -318,20 +320,23 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         Color statusColor = GetStatusColor(moisture, info.ContainerCount);
         string statusBadge = GetStatusLabel(moisture, moisturePct, info.ContainerCount);
 
+        bool hasAdditives = info.Additives != null && info.Additives.Count > 0;
+        float cardHeight = hasAdditives ? 148f : 104f;
+
         GameObject card = CreateRoundedPanel("PropertyCard_" + info.PropertyName, _listContent, CardProperty);
         LayoutElement cardLe = card.AddComponent<LayoutElement>();
-        cardLe.minHeight = 104f;
-        cardLe.preferredHeight = 104f;
+        cardLe.minHeight = cardHeight;
+        cardLe.preferredHeight = cardHeight;
         cardLe.flexibleWidth = 1f;
 
-        HorizontalLayoutGroup cardLayout = card.AddComponent<HorizontalLayoutGroup>();
-        cardLayout.padding = new RectOffset(20, 18, 14, 14);
-        cardLayout.spacing = 18f;
-        cardLayout.childAlignment = TextAnchor.MiddleLeft;
-        cardLayout.childControlWidth = true;
-        cardLayout.childControlHeight = true;
-        cardLayout.childForceExpandWidth = false;
-        cardLayout.childForceExpandHeight = false;
+        VerticalLayoutGroup cardV = card.AddComponent<VerticalLayoutGroup>();
+        cardV.padding = new RectOffset(20, 18, 12, 12);
+        cardV.spacing = 10f;
+        cardV.childAlignment = TextAnchor.UpperLeft;
+        cardV.childControlWidth = true;
+        cardV.childControlHeight = true;
+        cardV.childForceExpandWidth = true;
+        cardV.childForceExpandHeight = false;
 
         // 6px left status accent bar (ignored by layout so it hugs the card edge)
         GameObject accentBar = new("StatusAccentBar");
@@ -347,9 +352,23 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         LayoutElement accentIgnore = accentBar.AddComponent<LayoutElement>();
         accentIgnore.ignoreLayout = true;
 
-        // Left info column
+        // Top half: property info + Water button
+        GameObject topHalf = new("TopHalf");
+        topHalf.transform.SetParent(card.transform, false);
+        LayoutElement topHalfLe = topHalf.AddComponent<LayoutElement>();
+        topHalfLe.minHeight = 76f;
+        topHalfLe.preferredHeight = 76f;
+
+        HorizontalLayoutGroup topHalfH = topHalf.AddComponent<HorizontalLayoutGroup>();
+        topHalfH.spacing = 18f;
+        topHalfH.childAlignment = TextAnchor.MiddleLeft;
+        topHalfH.childControlWidth = true;
+        topHalfH.childControlHeight = true;
+        topHalfH.childForceExpandWidth = false;
+        topHalfH.childForceExpandHeight = false;
+
         GameObject infoCol = new("InfoColumn");
-        infoCol.transform.SetParent(card.transform, false);
+        infoCol.transform.SetParent(topHalf.transform, false);
         LayoutElement infoColLe = infoCol.AddComponent<LayoutElement>();
         infoColLe.flexibleWidth = 1f;
 
@@ -361,11 +380,9 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         infoV.childForceExpandWidth = true;
         infoV.childForceExpandHeight = false;
 
-        // Top row: Property Name + Status Badge
         GameObject topRow = new("CardTopRow");
         topRow.transform.SetParent(infoCol.transform, false);
-        LayoutElement topRowLe = topRow.AddComponent<LayoutElement>();
-        topRowLe.preferredHeight = 24f;
+        topRow.AddComponent<LayoutElement>().preferredHeight = 24f;
 
         HorizontalLayoutGroup topRowH = topRow.AddComponent<HorizontalLayoutGroup>();
         topRowH.spacing = 10f;
@@ -383,7 +400,6 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         badgeLe.minWidth = 100f;
         badgeLe.preferredWidth = 120f;
 
-        // Visual Moisture Progress Bar
         GameObject track = CreateRoundedPanel("MoistureTrack", infoCol.transform, TrackBg);
         LayoutElement trackLe = track.AddComponent<LayoutElement>();
         trackLe.minHeight = 12f;
@@ -396,7 +412,6 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         fillRect.offsetMin = Vector2.zero;
         fillRect.offsetMax = Vector2.zero;
 
-        // Bottom stats row
         string headWord = info.HeadCount == 1 ? "Head" : "Heads";
         string rackWord = info.RackCount == 1 ? "Rack" : "Racks";
         string potLabel = info.ContainerCount > 0
@@ -414,7 +429,6 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
             TextAnchor.MiddleLeft);
         statsText.gameObject.AddComponent<LayoutElement>().preferredHeight = 18f;
 
-        // Right action button
         bool alreadyFull = info.ContainerCount > 0 && moisture >= 0.99f;
         string buttonLabel = alreadyFull ? "Top Up" : "Water Now";
         Color buttonColor = alreadyFull ? BtnTopUp : BtnPrimary;
@@ -422,7 +436,7 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         Button waterBtn = CreateRoundedButton(
             "WaterButton_" + info.PropertyName,
             buttonLabel,
-            card.transform,
+            topHalf.transform,
             font,
             buttonColor,
             132f,
@@ -432,6 +446,66 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
 
         Property targetProperty = info.Property;
         waterBtn.onClick.AddListener(() => OnWaterPropertyClicked(targetProperty));
+
+        if (!hasAdditives)
+        {
+            return;
+        }
+
+        // Subtle 1px divider
+        GameObject divider = new("Divider");
+        divider.transform.SetParent(card.transform, false);
+        Image divImg = divider.AddComponent<Image>();
+        divImg.color = DividerLine;
+        LayoutElement divLe = divider.AddComponent<LayoutElement>();
+        divLe.minHeight = 1f;
+        divLe.preferredHeight = 1f;
+        divLe.flexibleHeight = 0f;
+
+        // Bottom additive strip
+        GameObject additiveRow = new("AdditiveStrip");
+        additiveRow.transform.SetParent(card.transform, false);
+        LayoutElement additiveRowLe = additiveRow.AddComponent<LayoutElement>();
+        additiveRowLe.minHeight = 34f;
+        additiveRowLe.preferredHeight = 34f;
+        additiveRowLe.flexibleHeight = 0f;
+
+        HorizontalLayoutGroup addH = additiveRow.AddComponent<HorizontalLayoutGroup>();
+        addH.spacing = 8f;
+        addH.childAlignment = TextAnchor.MiddleLeft;
+        addH.childControlWidth = true;
+        addH.childControlHeight = true;
+        addH.childForceExpandWidth = false;
+        addH.childForceExpandHeight = false;
+
+        Text addLabel = CreateText("AdditivesLabel", "Additives:", additiveRow.transform, font, 12, FontStyle.Bold, TextMuted, TextAnchor.MiddleLeft);
+        LayoutElement addLabelLe = addLabel.gameObject.AddComponent<LayoutElement>();
+        addLabelLe.minWidth = 70f;
+        addLabelLe.preferredWidth = 70f;
+        addLabelLe.preferredHeight = 32f;
+
+        for (int i = 0; i < info.Additives.Count; i++)
+        {
+            AdditiveStockEntry entry = info.Additives[i];
+            bool canApply = entry.StorageCount > 0 && entry.EligibleCount > 0;
+            Color pillColor = canApply ? GetAdditiveButtonColor(entry.Definition.ID) : BtnDisabled;
+            string pillText = $"{entry.Definition.Name} ({entry.StorageCount})";
+
+            Button addBtn = CreateRoundedButton(
+                "AdditiveBtn_" + entry.Definition.ID,
+                pillText,
+                additiveRow.transform,
+                font,
+                pillColor,
+                148f,
+                32f,
+                13,
+                canApply ? FontStyle.Bold : FontStyle.Normal);
+            addBtn.interactable = canApply;
+
+            AdditiveDefinition targetDef = entry.Definition;
+            addBtn.onClick.AddListener(() => OnApplyAdditiveClicked(targetProperty, targetDef));
+        }
     }
 
     private void OnWaterPropertyClicked(Property property)
@@ -509,12 +583,63 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         }
     }
 
+    private void OnApplyAdditiveClicked(Property property, AdditiveDefinition additiveDef)
+    {
+        try
+        {
+            AdditiveApplySummary summary = SprinklerController.ApplyAdditiveToProperty(property, additiveDef);
+            RefreshList();
+
+            if (summary.SkippedNotServer)
+            {
+                SetStatus($"Cannot apply {summary.AdditiveName} at {summary.PropertyName} as a non-host client yet (M4).");
+                return;
+            }
+
+            if (summary.EligibleCount == 0)
+            {
+                SetStatus($"{summary.PropertyName}: No planted pots need {summary.AdditiveName}.");
+                return;
+            }
+
+            string potWord = summary.AppliedCount == 1 ? "pot" : "pots";
+            string msg = summary.RanOutOfStock
+                ? $"{summary.PropertyName}: Applied {summary.AdditiveName} to {summary.AppliedCount}/{summary.EligibleCount} {potWord} — ran out in storage!"
+                : $"{summary.PropertyName}: Applied {summary.AdditiveName} to {summary.AppliedCount} {potWord} ({summary.RemainingInStorage} left in storage).";
+
+            SetStatus(msg);
+            MelonLogger.Msg("[OverheadSprinkler] " + msg);
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Failed to apply {additiveDef.Name} at {property.PropertyName}: {ex.Message}");
+            MelonLogger.Error($"[OverheadSprinkler] PhoneApp ApplyAdditive failed: {ex}");
+        }
+    }
+
     private void SetStatus(string message)
     {
         if (_statusText != null)
         {
             _statusText.text = message;
         }
+    }
+
+    private static Color GetAdditiveButtonColor(string? additiveId)
+    {
+        if (string.Equals(additiveId, "fertilizer", StringComparison.OrdinalIgnoreCase))
+        {
+            return BtnFertilizer;
+        }
+        if (string.Equals(additiveId, "pgr", StringComparison.OrdinalIgnoreCase))
+        {
+            return BtnPgr;
+        }
+        if (string.Equals(additiveId, "speedgrow", StringComparison.OrdinalIgnoreCase))
+        {
+            return BtnSpeedGrow;
+        }
+        return BtnAdditiveOther;
     }
 
     private static Color GetStatusColor(float moisture, int containerCount)
@@ -593,7 +718,7 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         colors.normalColor = Color.white;
         colors.highlightedColor = new Color(1.12f, 1.12f, 1.12f, 1f);
         colors.pressedColor = new Color(0.82f, 0.82f, 0.82f, 1f);
-        colors.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+        colors.disabledColor = new Color(0.55f, 0.55f, 0.55f, 0.55f);
         btn.colors = colors;
 
         Text labelText = CreateText("Label", label, go.transform, font, fontSize, fontStyle, Color.white, TextAnchor.MiddleCenter);
