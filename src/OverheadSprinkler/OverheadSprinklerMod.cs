@@ -7,6 +7,7 @@ using S1API.Shops;
 #if IL2CPP
 using Il2CppScheduleOne;
 using Il2CppScheduleOne.DevUtilities;
+using Il2CppScheduleOne.EntityFramework;
 using Il2CppScheduleOne.ObjectScripts;
 using Il2CppScheduleOne.PlayerScripts;
 using Il2CppScheduleOne.Property;
@@ -16,6 +17,7 @@ using GameItemInstance = Il2CppScheduleOne.ItemFramework.ItemInstance;
 #else
 using ScheduleOne;
 using ScheduleOne.DevUtilities;
+using ScheduleOne.EntityFramework;
 using ScheduleOne.ObjectScripts;
 using ScheduleOne.PlayerScripts;
 using ScheduleOne.Property;
@@ -30,7 +32,7 @@ using S1BuildableItemCreator = S1API.Items.Buildable.BuildableItemCreator;
 using S1BuildableItemDefinition = S1API.Items.Buildable.BuildableItemDefinition;
 using S1ItemDefinition = S1API.Items.ItemDefinition;
 
-[assembly: MelonInfo(typeof(OverheadSprinkler.OverheadSprinklerMod), "OverheadSprinkler", "0.4.0", "Trooper-code")]
+[assembly: MelonInfo(typeof(OverheadSprinkler.OverheadSprinklerMod), "OverheadSprinkler", "1.0.0", "Trooper-code")]
 [assembly: MelonGame("TVGS", "Schedule I")]
 
 namespace OverheadSprinkler;
@@ -52,13 +54,15 @@ public sealed class OverheadSprinklerMod : MelonMod
     };
 
     private string? _clonedSourceId;
+    private readonly HashSet<int> _subscribedPropertyIds = new();
 
     public override void OnInitializeMelon()
     {
         SprinklerConfig.Initialize();
         GameLifecycle.OnPreLoad += OnPreLoad;
         GameLifecycle.OnLoadComplete += OnLoadComplete;
-        LoggerInstance.Msg("OverheadSprinkler v0.4.0 loaded.");
+        GameLifecycle.OnPreSceneChange += OnPreSceneChange;
+        LoggerInstance.Msg("OverheadSprinkler v1.0.0 loaded.");
     }
 
     public override void OnSceneWasInitialized(int buildIndex, string sceneName)
@@ -89,6 +93,11 @@ public sealed class OverheadSprinklerMod : MelonMod
     }
 #endif
 
+    private void OnPreSceneChange()
+    {
+        _subscribedPropertyIds.Clear();
+    }
+
     private void OnPreLoad()
     {
         EnsureItemRegistered();
@@ -98,6 +107,46 @@ public sealed class OverheadSprinklerMod : MelonMod
     {
         EnsureItemRegistered();
         RegisterInShops();
+        SprinklerVisuals.AttachNozzlesInAllOwnedProperties();
+        HookPropertyItemAddedEvents();
+    }
+
+    private void HookPropertyItemAddedEvents()
+    {
+        var owned = Property.OwnedProperties;
+        if (owned == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < owned.Count; i++)
+        {
+            Property prop = owned[i];
+            if (prop == null || !_subscribedPropertyIds.Add(prop.GetInstanceID()))
+            {
+                continue;
+            }
+
+#if IL2CPP
+            prop.add_onBuildableItemAdded((Il2CppSystem.Action<BuildableItem>)OnBuildableItemAdded);
+#else
+            prop.onBuildableItemAdded += OnBuildableItemAdded;
+#endif
+        }
+    }
+
+    private static void OnBuildableItemAdded(BuildableItem item)
+    {
+        ProceduralGridItem? gridItem = GameCompat.TryCast<ProceduralGridItem>(item);
+        if (gridItem == null || gridItem.isGhost || gridItem.ItemInstance == null)
+        {
+            return;
+        }
+
+        if (string.Equals(gridItem.ItemInstance.ID, SprinklerController.ItemId, StringComparison.Ordinal))
+        {
+            SprinklerVisuals.EnsureNozzleAttached(gridItem);
+        }
     }
 
     private void EnsureItemRegistered()

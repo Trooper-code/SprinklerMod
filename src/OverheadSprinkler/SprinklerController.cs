@@ -233,6 +233,7 @@ public static class SprinklerController
                 && string.Equals(item.ItemInstance.ID, ItemId, StringComparison.Ordinal)
                 && seenIds.Add(item.GetInstanceID()))
             {
+                SprinklerVisuals.EnsureNozzleAttached(item);
                 heads.Add(item);
             }
         }

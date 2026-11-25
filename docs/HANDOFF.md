@@ -24,13 +24,13 @@ update. Copy the whole game folder somewhere else (e.g. `E:\S1-modding\Schedule 
 | .NET SDK | 10.0.404 |
 
 ## How it works now
-M1–M3 and M4a (particles, equalized vanilla audio, 5-segment watering, `MelonPreferences`) are confirmed live on Mono. `OverheadSprinkler.csproj` now dual-targets both Mono (`netstandard2.1` → `OverheadSprinkler.Mono.dll`) and IL2CPP (`net6.0` → `OverheadSprinkler.IL2CPP.dll`) on branch `m4-polish`. Research so far: `docs/research/INDEX.md`.
+M1–M4 are verified live (Mono and IL2CPP). On branch `m5-release`, `v1.0.0` adds procedural pipe & brass nozzle visuals (`SprinklerVisuals`), complete `README.md` / `CHANGELOG.md`, and packaged IL2CPP + Mono release zips under `dist/`. Research so far: `docs/research/INDEX.md`.
 
 ## Where it stops
-M4b IL2CPP build ready for live Windows testing on the normal IL2CPP Steam branch.
+M5 (`v1.0.0`) ready for final visual nozzle test on Windows, then merge & tag `v1.0.0`.
 
 ## In progress
-- Antigravity: M4b dual Mono + IL2CPP build on branch `m4-polish`.
+- Antigravity: M5 release prep on branch `m5-release`.
 
 ## Rules
 - Claude coordinates, reviews, merges and tags. Antigravity researches and codes, and never merges.

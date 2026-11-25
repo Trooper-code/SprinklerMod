@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.1;net6.0</TargetFrameworks>
+    <Version>1.0.0</Version>
     <RootNamespace>OverheadSprinkler</RootNamespace>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
@@ -72,6 +73,10 @@
       <HintPath>$(ScheduleIManagedDir)\UnityEngine.AudioModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(ScheduleIManagedDir)\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="Unity.InputSystem">
       <HintPath>$(ScheduleIManagedDir)\Unity.InputSystem.dll</HintPath>
       <Private>false</Private>
@@ -125,6 +130,10 @@
     </Reference>
     <Reference Include="UnityEngine.AudioModule">
       <HintPath>$(ScheduleIIl2CppDir)\UnityEngine.AudioModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(ScheduleIIl2CppDir)\UnityEngine.PhysicsModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Unity.InputSystem">
