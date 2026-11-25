@@ -1,8 +1,7 @@
 # Milestones
 
 ## Next
-**Antigravity:** M5 visual nozzle + `v1.0.0` release prep on branch `m5-release`.
-**Josh:** Test `OverheadSprinkler.IL2CPP.dll` nozzle visuals on Windows, then merge & tag `v1.0.0`.
+**Josh:** Merge `m5-release` → `main`, tag `v1.0.0`, upload `dist\OverheadSprinkler-v1.0.0-*.zip` to Nexus Mods using [docs/NEXUS-RELEASE.md](NEXUS-RELEASE.md), and share your GitHub repo URL to publish there.
 
 ## Milestones
 | # | Milestone | Done when | Status | Tag |
@@ -12,7 +11,7 @@
 | M2 | Real item + Phone App | Own name, description, price and Oscar's shop listing; works after save and reload; "Sprinklers" S1API `PhoneApp` with per-property **Water** and **Water All** | done | |
 | M3 | Fertilization / Additives | Property storage shelf consumption + **Fert / PGR / Speed Grow** buttons and status feedback in the Phone App | done | |
 | M4 | Polish, effects & IL2CPP | 5-segment spray effect and sound; `MelonPreferences`; co-op sync; main install back on normal branch with every game class checked against IL2CPP proxies and an IL2CPP build that loads | done (Mono + IL2CPP verified live) | |
-| M5 | Model and release | Original sprinkler model (pipe and nozzle); IL2CPP and Mono builds; README complete; packaged zip; `v1.0.0` (publishing later is optional, see D4) | in progress (ready for final v1.0.0 test) | |
+| M5 | Model and release | Original sprinkler model (pipe and nozzle); IL2CPP and Mono builds; README complete; packaged zip; `v1.0.0` (publishing later is optional, see D4) | done (verified live on IL2CPP; ready to merge & release) | |
 
 ## Later (not planned yet)
 - Dedicated **Additive Reservoir** placeable item to hold additive stacks instead of pulling from general property shelves.

@@ -14,4 +14,6 @@ One line per topic, pointing to where it lives. Look things up here first. Check
 | How the player activates an item hanging on the rack | [game-systems.md § Activating rack items](game-systems.md#activating-rack-items) | unverified (M0 static) |
 | What S1API can do for us (cloning buildables, shops) | [game-systems.md § S1API support](game-systems.md#s1api-support) | confirmed (M2/M3 live) |
 | Fertilization, additives, and property storage shelves | [game-systems.md § Fertilization and storage shelves](game-systems.md#fertilization-and-storage-shelves) | confirmed (M3 live) |
+| Audio, particles, and IL2CPP runtime findings | [game-systems.md § Audio, particles, and IL2CPP runtime](game-systems.md#audio-particles-and-il2cpp-runtime) | confirmed (M4/M5 live) |
+| Schedule I Mono + IL2CPP modding playbook (lessons learned) | [modding-lessons.md](modding-lessons.md) | confirmed (M1–M5 live) |
 | M1 Overhead Sprinkler Head design | [m1-design.md](m1-design.md) | ready for M1 |
