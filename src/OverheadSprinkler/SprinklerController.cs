@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using FishNet;
 using FishNet.Object;
+using MelonLoader;
 using ScheduleOne;
 using ScheduleOne.DevUtilities;
 using ScheduleOne.EntityFramework;
@@ -11,6 +13,7 @@ using ScheduleOne.ObjectScripts;
 using ScheduleOne.Property;
 using ScheduleOne.Storage;
 using ScheduleOne.Tiles;
+using UnityEngine;
 
 namespace OverheadSprinkler;
 
@@ -95,6 +98,7 @@ public sealed class WaterSummary
         int containersFound,
         int containersWatered,
         bool skippedNotServer,
+        bool alreadyRunning,
         IReadOnlyList<ContainerWaterResult> results)
     {
         PropertyName = propertyName;
@@ -103,6 +107,7 @@ public sealed class WaterSummary
         ContainersFound = containersFound;
         ContainersWatered = containersWatered;
         SkippedNotServer = skippedNotServer;
+        AlreadyRunning = alreadyRunning;
         Results = results;
     }
 
@@ -112,6 +117,7 @@ public sealed class WaterSummary
     public int ContainersFound { get; }
     public int ContainersWatered { get; }
     public bool SkippedNotServer { get; }
+    public bool AlreadyRunning { get; }
     public IReadOnlyList<ContainerWaterResult> Results { get; }
 }
 
@@ -158,12 +164,34 @@ public static class SprinklerController
     /// </summary>
     public const string ItemId = "overhead_sprinkler_head";
 
+    private const int WaterSegments = 5;
+
+    private static readonly Color WaterMistColor = new(0.62f, 0.88f, 1.0f, 0.85f);
+    private static readonly Color FertilizerMistColor = new(0.32f, 0.88f, 0.48f, 0.85f);
+    private static readonly Color PgrMistColor = new(0.95f, 0.72f, 0.25f, 0.85f);
+    private static readonly Color SpeedGrowMistColor = new(0.68f, 0.48f, 0.96f, 0.85f);
+
     private static readonly string[] PreferredAdditiveOrder =
     {
         "fertilizer",
         "pgr",
         "speedgrow",
     };
+
+    private static readonly HashSet<Property> ActiveWateringProperties = new();
+
+    /// <summary>
+    /// Raised whenever a property's watering state or container moisture changes during a spray cycle.
+    /// </summary>
+    public static event Action? OnSprinklerStateChanged;
+
+    /// <summary>
+    /// Returns true while a multi-segment watering cycle is actively running on the given property.
+    /// </summary>
+    public static bool IsPropertyWatering(Property? property)
+    {
+        return property != null && ActiveWateringProperties.Contains(property);
+    }
 
     /// <summary>
     /// Finds all placed, non-ghost Overhead Sprinkler Heads in the given property.
@@ -498,6 +526,7 @@ public static class SprinklerController
 
     /// <summary>
     /// Waters every GrowContainer under every Overhead Sprinkler Head in the given property.
+    /// Uses a smooth 5-segment spray cycle when SprayDurationSeconds > 0.05s, or fills immediately otherwise.
     /// </summary>
     public static WaterSummary WaterProperty(Property property)
     {
@@ -513,6 +542,19 @@ public static class SprinklerController
             out HashSet<GrowContainer> uniqueContainers);
 
         var results = new List<ContainerWaterResult>(uniqueContainers.Count);
+        if (IsPropertyWatering(property))
+        {
+            return new WaterSummary(
+                property.PropertyName,
+                heads.Count,
+                racks.Count,
+                uniqueContainers.Count,
+                0,
+                skippedNotServer: false,
+                alreadyRunning: true,
+                results);
+        }
+
         if (!InstanceFinder.IsServer)
         {
             return new WaterSummary(
@@ -522,29 +564,66 @@ public static class SprinklerController
                 uniqueContainers.Count,
                 0,
                 skippedNotServer: true,
+                alreadyRunning: false,
                 results);
         }
 
-        int wateredCount = 0;
-        foreach (GrowContainer container in uniqueContainers)
+        if (heads.Count == 0)
         {
-            float before = container.NormalizedMoistureAmount;
-            container.ChangeMoistureAmount(container.MoistureCapacity);
-            container.SyncMoistureData();
-            float after = container.NormalizedMoistureAmount;
-
-            wateredCount++;
-            string name = container.ItemInstance != null ? container.ItemInstance.Name : container.GetType().Name;
-            results.Add(new ContainerWaterResult(name, before, after, container.MoistureCapacity));
+            return new WaterSummary(
+                property.PropertyName,
+                0,
+                0,
+                0,
+                0,
+                skippedNotServer: false,
+                alreadyRunning: false,
+                results);
         }
+
+        float duration = SprinklerConfig.SprayDurationSeconds;
+        if (duration <= 0.05f)
+        {
+            SprinklerEffects.PlaySprayOnHeads(heads, 1.2f, WaterMistColor, isAdditiveBurst: false);
+
+            int wateredCount = 0;
+            foreach (GrowContainer container in uniqueContainers)
+            {
+                float before = container.NormalizedMoistureAmount;
+                container.ChangeMoistureAmount(container.MoistureCapacity);
+                container.SyncMoistureData();
+                float after = container.NormalizedMoistureAmount;
+
+                wateredCount++;
+                string name = container.ItemInstance != null ? container.ItemInstance.Name : container.GetType().Name;
+                results.Add(new ContainerWaterResult(name, before, after, container.MoistureCapacity));
+            }
+
+            OnSprinklerStateChanged?.Invoke();
+            return new WaterSummary(
+                property.PropertyName,
+                heads.Count,
+                racks.Count,
+                uniqueContainers.Count,
+                wateredCount,
+                skippedNotServer: false,
+                alreadyRunning: false,
+                results);
+        }
+
+        ActiveWateringProperties.Add(property);
+        SprinklerEffects.PlaySprayOnHeads(heads, duration, WaterMistColor, isAdditiveBurst: false);
+        OnSprinklerStateChanged?.Invoke();
+        MelonCoroutines.Start(RunWateringRoutine(property, new List<GrowContainer>(uniqueContainers), duration));
 
         return new WaterSummary(
             property.PropertyName,
             heads.Count,
             racks.Count,
             uniqueContainers.Count,
-            wateredCount,
+            uniqueContainers.Count,
             skippedNotServer: false,
+            alreadyRunning: false,
             results);
     }
 
@@ -580,7 +659,7 @@ public static class SprinklerController
 
         CollectRacksAndContainers(
             property,
-            out _,
+            out List<ProceduralGridItem> heads,
             out _,
             out HashSet<GrowContainer> uniqueContainers);
 
@@ -620,6 +699,11 @@ public static class SprinklerController
             appliedCount++;
         }
 
+        if (appliedCount > 0)
+        {
+            SprinklerEffects.PlaySprayOnHeads(heads, 1.8f, GetAdditiveMistColor(additiveDef.ID), isAdditiveBurst: true);
+        }
+
         int remaining = CountItemInPropertyStorage(property, additiveDef.ID);
         return new AdditiveApplySummary(
             property.PropertyName,
@@ -629,6 +713,56 @@ public static class SprinklerController
             remaining,
             ranOutOfStock,
             skippedNotServer: false);
+    }
+
+    private static IEnumerator RunWateringRoutine(Property property, List<GrowContainer> containers, float totalDuration)
+    {
+        try
+        {
+            float segmentDelay = totalDuration / WaterSegments;
+            float normalizedIncrement = 1f / WaterSegments;
+
+            for (int seg = 0; seg < WaterSegments; seg++)
+            {
+                yield return new WaitForSeconds(segmentDelay);
+
+                for (int i = 0; i < containers.Count; i++)
+                {
+                    GrowContainer container = containers[i];
+                    if (container == null || container.isGhost)
+                    {
+                        continue;
+                    }
+
+                    container.ChangeMoistureAmount(container.MoistureCapacity * normalizedIncrement);
+                    container.SyncMoistureData();
+                }
+
+                OnSprinklerStateChanged?.Invoke();
+            }
+        }
+        finally
+        {
+            ActiveWateringProperties.Remove(property);
+            OnSprinklerStateChanged?.Invoke();
+        }
+    }
+
+    private static Color GetAdditiveMistColor(string? additiveId)
+    {
+        if (string.Equals(additiveId, "fertilizer", StringComparison.OrdinalIgnoreCase))
+        {
+            return FertilizerMistColor;
+        }
+        if (string.Equals(additiveId, "pgr", StringComparison.OrdinalIgnoreCase))
+        {
+            return PgrMistColor;
+        }
+        if (string.Equals(additiveId, "speedgrow", StringComparison.OrdinalIgnoreCase))
+        {
+            return SpeedGrowMistColor;
+        }
+        return WaterMistColor;
     }
 
     private static int GetAdditiveSortRank(string? additiveId)

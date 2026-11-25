@@ -51,9 +51,32 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
     private Text? _headerSummaryText;
     private Text? _statusText;
     private Button? _waterAllButton;
+    private Action? _stateChangedHandler;
 
     public SprinklerPhoneApp()
     {
+    }
+
+    protected override void OnCreated()
+    {
+        base.OnCreated();
+        _stateChangedHandler = OnControllerStateChanged;
+        SprinklerController.OnSprinklerStateChanged += _stateChangedHandler;
+    }
+
+    protected override void OnDestroyed()
+    {
+        if (_stateChangedHandler != null)
+        {
+            SprinklerController.OnSprinklerStateChanged -= _stateChangedHandler;
+            _stateChangedHandler = null;
+        }
+        base.OnDestroyed();
+    }
+
+    private void OnControllerStateChanged()
+    {
+        RefreshList();
     }
 
     protected override string AppName => "overhead_sprinklers";
@@ -430,9 +453,10 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
             TextAnchor.MiddleLeft);
         statsText.gameObject.AddComponent<LayoutElement>().preferredHeight = 18f;
 
+        bool isWatering = SprinklerController.IsPropertyWatering(info.Property);
         bool alreadyFull = info.ContainerCount > 0 && moisture >= 0.99f;
-        string buttonLabel = alreadyFull ? "Top Up" : "Water Now";
-        Color buttonColor = alreadyFull ? BtnTopUp : BtnPrimary;
+        string buttonLabel = isWatering ? "Watering..." : (alreadyFull ? "Top Up" : "Water Now");
+        Color buttonColor = isWatering ? BtnDisabled : (alreadyFull ? BtnTopUp : BtnPrimary);
 
         Button waterBtn = CreateRoundedButton(
             "WaterButton_" + info.PropertyName,
@@ -444,6 +468,7 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
             46f,
             15,
             FontStyle.Bold);
+        waterBtn.interactable = !isWatering;
 
         Property targetProperty = info.Property;
         waterBtn.onClick.AddListener(() => OnWaterPropertyClicked(targetProperty));
@@ -516,22 +541,31 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
             WaterSummary summary = SprinklerController.WaterProperty(property);
             RefreshList();
 
+            if (summary.AlreadyRunning)
+            {
+                SetStatus($"{summary.PropertyName} is already watering.");
+                return;
+            }
+
             if (summary.SkippedNotServer)
             {
-                SetStatus($"Cannot water {summary.PropertyName} as a non-host client yet (co-op sync comes in M4).");
+                SetStatus($"Cannot water {summary.PropertyName} as a non-host client yet (co-op sync comes in M4b).");
                 return;
             }
 
             string potWord = summary.ContainersWatered == 1 ? "pot" : "pots";
             string headWord = summary.HeadCount == 1 ? "head" : "heads";
-            string msg = $"Watered {summary.PropertyName}: {summary.HeadCount} {headWord}, {summary.ContainersWatered} {potWord} filled to 100%.";
+            bool isInstant = SprinklerConfig.SprayDurationSeconds <= 0.05f;
+            string msg = isInstant
+                ? $"Watered {summary.PropertyName}: {summary.HeadCount} {headWord}, {summary.ContainersWatered} {potWord} filled to 100%."
+                : $"Watering {summary.PropertyName}: {summary.HeadCount} {headWord}, {summary.ContainersWatered} {potWord}...";
             SetStatus(msg);
-            MelonLogger.Msg("[OverheadSprinkler] " + msg);
+            MelonLogger.Msg(msg);
         }
         catch (Exception ex)
         {
             SetStatus($"Failed to water {property.PropertyName}: {ex.Message}");
-            MelonLogger.Error($"[OverheadSprinkler] PhoneApp WaterProperty failed: {ex}");
+            MelonLogger.Error($"PhoneApp WaterProperty failed: {ex}");
         }
     }
 
@@ -550,6 +584,7 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
 
             int totalPots = 0;
             int totalHeads = 0;
+            int activeProps = 0;
             bool anySkipped = false;
             for (int i = 0; i < summaries.Count; i++)
             {
@@ -557,8 +592,9 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
                 {
                     anySkipped = true;
                 }
-                else
+                else if (!summaries[i].AlreadyRunning)
                 {
+                    activeProps++;
                     totalPots += summaries[i].ContainersWatered;
                     totalHeads += summaries[i].HeadCount;
                 }
@@ -566,21 +602,30 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
 
             if (anySkipped && totalPots == 0)
             {
-                SetStatus("Cannot water as a non-host client yet (co-op sync comes in M4).");
+                SetStatus("Cannot water as a non-host client yet (co-op sync comes in M4b).");
                 return;
             }
 
-            string propWord = summaries.Count == 1 ? "property" : "properties";
+            if (activeProps == 0)
+            {
+                SetStatus("All properties are already watering.");
+                return;
+            }
+
+            string propWord = activeProps == 1 ? "property" : "properties";
             string headWord = totalHeads == 1 ? "head" : "heads";
             string potWord = totalPots == 1 ? "pot" : "pots";
-            string msg = $"Watered {summaries.Count} {propWord} ({totalHeads} {headWord}, {totalPots} {potWord} filled to 100%).";
+            bool isInstant = SprinklerConfig.SprayDurationSeconds <= 0.05f;
+            string msg = isInstant
+                ? $"Watered {activeProps} {propWord} ({totalHeads} {headWord}, {totalPots} {potWord} filled to 100%)."
+                : $"Watering {activeProps} {propWord} ({totalHeads} {headWord}, {totalPots} {potWord})...";
             SetStatus(msg);
-            MelonLogger.Msg("[OverheadSprinkler] " + msg);
+            MelonLogger.Msg(msg);
         }
         catch (Exception ex)
         {
             SetStatus($"Water All failed: {ex.Message}");
-            MelonLogger.Error($"[OverheadSprinkler] PhoneApp WaterAll failed: {ex}");
+            MelonLogger.Error($"PhoneApp WaterAll failed: {ex}");
         }
     }
 
@@ -593,7 +638,7 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
 
             if (summary.SkippedNotServer)
             {
-                SetStatus($"Cannot apply {summary.AdditiveName} at {summary.PropertyName} as a non-host client yet (M4).");
+                SetStatus($"Cannot apply {summary.AdditiveName} at {summary.PropertyName} as a non-host client yet (M4b).");
                 return;
             }
 
@@ -609,12 +654,12 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
                 : $"{summary.PropertyName}: Applied {summary.AdditiveName} to {summary.AppliedCount} {potWord} ({summary.RemainingInStorage} left in storage).";
 
             SetStatus(msg);
-            MelonLogger.Msg("[OverheadSprinkler] " + msg);
+            MelonLogger.Msg(msg);
         }
         catch (Exception ex)
         {
             SetStatus($"Failed to apply {additiveDef.Name} at {property.PropertyName}: {ex.Message}");
-            MelonLogger.Error($"[OverheadSprinkler] PhoneApp ApplyAdditive failed: {ex}");
+            MelonLogger.Error($"PhoneApp ApplyAdditive failed: {ex}");
         }
     }
 

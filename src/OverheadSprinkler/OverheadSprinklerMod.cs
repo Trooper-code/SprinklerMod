@@ -19,24 +19,20 @@ using S1BuildableItemCreator = S1API.Items.Buildable.BuildableItemCreator;
 using S1BuildableItemDefinition = S1API.Items.Buildable.BuildableItemDefinition;
 using S1ItemDefinition = S1API.Items.ItemDefinition;
 
-[assembly: MelonInfo(typeof(OverheadSprinkler.OverheadSprinklerMod), "OverheadSprinkler", "0.3.0", "Trooper-code")]
+[assembly: MelonInfo(typeof(OverheadSprinkler.OverheadSprinklerMod), "OverheadSprinkler", "0.4.0", "Trooper-code")]
 [assembly: MelonGame("TVGS", "Schedule I")]
 
 namespace OverheadSprinkler;
 
 /// <summary>
 /// Main MelonMod entrypoint for Overhead Sprinkler:
-/// - Clones the best vanilla overhead grow light ("fullspectrumgrowlight") into "overhead_sprinkler_head" ($1,500).
+/// - Loads MelonPreferences config (price, spray duration, particles, sound, volume).
+/// - Clones the best vanilla overhead grow light ("fullspectrumgrowlight") into "overhead_sprinkler_head".
 /// - Lists the item in Oscar's Warehouse shop (and any shop selling the Full Spectrum Grow Light).
 /// - Leaves M1 debug hotkeys (F7/F8) active only in DEBUG builds.
 /// </summary>
 public sealed class OverheadSprinklerMod : MelonMod
 {
-    /// <summary>
-    /// Purchase price per Overhead Sprinkler Head (higher than the $1,000 Big Sprinkler).
-    /// </summary>
-    public const float HeadPurchasePrice = 1500f;
-
     private static readonly string[] PreferredGrowLightIds =
     {
         "fullspectrumgrowlight",
@@ -48,9 +44,10 @@ public sealed class OverheadSprinklerMod : MelonMod
 
     public override void OnInitializeMelon()
     {
+        SprinklerConfig.Initialize();
         GameLifecycle.OnPreLoad += OnPreLoad;
         GameLifecycle.OnLoadComplete += OnLoadComplete;
-        LoggerInstance.Msg("OverheadSprinkler v0.3.0 loaded.");
+        LoggerInstance.Msg("OverheadSprinkler v0.4.0 loaded.");
     }
 
     public override void OnSceneWasInitialized(int buildIndex, string sceneName)
@@ -101,6 +98,8 @@ public sealed class OverheadSprinklerMod : MelonMod
                 return;
             }
 
+            float price = SprinklerConfig.HeadPurchasePrice;
+
             if (Registry.ItemExists(SprinklerController.ItemId))
             {
                 S1ItemDefinition? existing = ItemManager.GetDefinition(SprinklerController.ItemId);
@@ -125,13 +124,13 @@ public sealed class OverheadSprinklerMod : MelonMod
                     "Overhead Sprinkler Head",
                     "High-end overhead grow light with an integrated sprinkler head. Hangs on a Suspension Rack and waters every pot underneath via the Sprinklers phone app.",
                     ItemCategory.Growing)
-                .WithPricing(HeadPurchasePrice, 0.5f)
+                .WithPricing(price, 0.5f)
                 .Build();
 
             ItemManager.PreserveRuntimeItem(created);
             _clonedSourceId = sourceDef.ID;
             LoggerInstance.Msg(
-                $"Registered '{SprinklerController.ItemId}' (${HeadPurchasePrice:F0}) by cloning '{sourceDef.ID}' ({sourceDef.Name}).");
+                $"Registered '{SprinklerController.ItemId}' (${price:F0}) by cloning '{sourceDef.ID}' ({sourceDef.Name}).");
         }
         catch (Exception ex)
         {
@@ -150,6 +149,7 @@ public sealed class OverheadSprinklerMod : MelonMod
                 return;
             }
 
+            float price = SprinklerConfig.HeadPurchasePrice;
             var targetShops = new List<Shop>();
             string sourceLookupId = _clonedSourceId ?? "fullspectrumgrowlight";
             Shop[] sourceShops = ShopManager.FindShopsByItem(sourceLookupId);
@@ -196,10 +196,10 @@ public sealed class OverheadSprinklerMod : MelonMod
                     continue;
                 }
 
-                if (shop.AddItem(itemDef, HeadPurchasePrice))
+                if (shop.AddItem(itemDef, price))
                 {
                     LoggerInstance.Msg(
-                        $"Added '{SprinklerController.ItemId}' to shop '{shop.Name}' for ${HeadPurchasePrice:F0}.");
+                        $"Added '{SprinklerController.ItemId}' to shop '{shop.Name}' for ${price:F0}.");
                 }
                 else
                 {
@@ -289,20 +289,13 @@ public sealed class OverheadSprinklerMod : MelonMod
             {
                 LoggerInstance.Warning(
                     $"Property '{summary.PropertyName}': found {summary.HeadCount} head(s) across {summary.RackCount} rack(s) " +
-                    $"({summary.ContainersFound} pot/bed(s)), but skipped watering because this client is not the host/server (M4 adds client RPC).");
+                    $"({summary.ContainersFound} pot/bed(s)), but skipped watering because this client is not the host/server.");
                 return;
             }
 
             LoggerInstance.Msg(
-                $"Watered property '{summary.PropertyName}': {summary.HeadCount} head(s), " +
+                $"Started watering property '{summary.PropertyName}': {summary.HeadCount} head(s), " +
                 $"{summary.RackCount} rack(s), {summary.ContainersWatered} container(s).");
-
-            for (int i = 0; i < summary.Results.Count; i++)
-            {
-                ContainerWaterResult r = summary.Results[i];
-                LoggerInstance.Msg(
-                    $"  - {r.Name}: {r.BeforeNormalized * 100f:F0}% -> {r.AfterNormalized * 100f:F0}% (cap {r.Capacity:F1})");
-            }
         }
         catch (Exception ex)
         {
