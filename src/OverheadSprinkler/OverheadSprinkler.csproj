@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\Directory.Build.props.user" Condition="Exists('..\..\Directory.Build.props.user')" />
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>OverheadSprinkler</AssemblyName>
+    <RootNamespace>OverheadSprinkler</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <NoWarn>NU1605;NU1701</NoWarn>
+  </PropertyGroup>
+
+  <Target Name="CheckGamePath" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(ScheduleIManagedDir)' == '' Or !Exists('$(ScheduleIManagedDir)\Assembly-CSharp.dll')"
+           Text="ScheduleIManagedDir is not set or Assembly-CSharp.dll was not found. Copy Directory.Build.props.user.example to Directory.Build.props.user in the repo root and set ScheduleIManagedDir." />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="LavaGang.MelonLoader" Version="0.7.3" />
+    <PackageReference Include="S1API.Forked" Version="3.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(ScheduleIManagedDir)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ScheduleOne.Core">
+      <HintPath>$(ScheduleIManagedDir)\ScheduleOne.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="FishNet.Runtime">
+      <HintPath>$(ScheduleIManagedDir)\FishNet.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(ScheduleIManagedDir)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.InputSystem">
+      <HintPath>$(ScheduleIManagedDir)\Unity.InputSystem.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

@@ -1,6 +1,18 @@
 # Decisions
 
-## D5 · 2026-11-19 · Water on interact for now; automatic watering later, maybe
+## D6 · 2026-11-25 · Automatic per-property chaining, Phone App trigger, and property-storage additives
+**Decided:**
+1. **Automatic per-property chaining:** All Overhead Sprinkler Heads placed in the same `Property` activate together automatically—no linking UI or separate zones.
+2. **In-game Phone App trigger:** Players activate sprinklers from a "Sprinklers" app on the in-game phone (built with S1API `PhoneApp`), accessible from anywhere and listing every owned property with installed heads.
+3. **Property-storage additives (M3):** Applying Fertilizer, PGR, or Speed Grow from the Phone App pulls bottles from storage shelves (`PlaceableStorageEntity` / `StorageEntity`) in that property and applies them via `GrowContainer.ApplyAdditive_Server`.
+**Rejected:**
+- Manual zone linking (extra UI and save state for v1).
+- Wall-mounted button in v1 (extra placeable `SurfaceItem`, shop entry, and model; kept open as an optional post-v1 addition).
+- Additive Reservoir item in v1 (kept as a post-v1 upgrade over pulling from general property shelves).
+**Why:** Josh's choice (2026-11-25) to make multi-rack watering one-tap via the phone app and integrate fertilization cleanly into the restocking loop while shipping core watering first.
+**Supersedes:** D2, D5
+
+## D5 · 2026-11-19 · Water on interact for now; automatic watering later, maybe (superseded by D6)
 **Decided:** The player activates the head, the same way the vanilla Pot Sprinkler and Big Sprinkler work, and it
 waters every pot under its rack once. Automatic watering is a possible later milestone, not part of v1.
 **Rejected:** Automatic watering below a threshold (D3). It needs a periodic check on a game-time tick, a threshold
