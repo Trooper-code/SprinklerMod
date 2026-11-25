@@ -320,7 +320,8 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         Color statusColor = GetStatusColor(moisture, info.ContainerCount);
         string statusBadge = GetStatusLabel(moisture, moisturePct, info.ContainerCount);
 
-        bool hasAdditives = info.Additives != null && info.Additives.Count > 0;
+        IReadOnlyList<AdditiveStockEntry>? additives = info.Additives;
+        bool hasAdditives = additives != null && additives.Count > 0;
         float cardHeight = hasAdditives ? 148f : 104f;
 
         GameObject card = CreateRoundedPanel("PropertyCard_" + info.PropertyName, _listContent, CardProperty);
@@ -447,7 +448,7 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         Property targetProperty = info.Property;
         waterBtn.onClick.AddListener(() => OnWaterPropertyClicked(targetProperty));
 
-        if (!hasAdditives)
+        if (additives == null || additives.Count == 0)
         {
             return;
         }
@@ -484,9 +485,9 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         addLabelLe.preferredWidth = 70f;
         addLabelLe.preferredHeight = 32f;
 
-        for (int i = 0; i < info.Additives.Count; i++)
+        for (int i = 0; i < additives.Count; i++)
         {
-            AdditiveStockEntry entry = info.Additives[i];
+            AdditiveStockEntry entry = additives[i];
             bool canApply = entry.StorageCount > 0 && entry.EligibleCount > 0;
             Color pillColor = canApply ? GetAdditiveButtonColor(entry.Definition.ID) : BtnDisabled;
             string pillText = $"{entry.Definition.Name} ({entry.StorageCount})";
