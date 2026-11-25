@@ -1,8 +1,8 @@
 # Milestones
 
 ## Next
-**Antigravity:** M4b dual Mono + IL2CPP build on branch `m4-polish`.
-**Josh:** Test `OverheadSprinkler.IL2CPP.dll` + IL2CPP `S1API` on the normal Steam branch (`Mods/`).
+**Antigravity:** M5 visual nozzle + `v1.0.0` release prep on branch `m5-release`.
+**Josh:** Test `OverheadSprinkler.IL2CPP.dll` nozzle visuals on Windows, then merge & tag `v1.0.0`.
 
 ## Milestones
 | # | Milestone | Done when | Status | Tag |
@@ -11,8 +11,8 @@
 | M1 | Proof of concept | A head clones a grow light via S1API, hangs on a Suspension Rack, and `F8` waters every pot under all heads in the current property (`F7` spawns head) | done | |
 | M2 | Real item + Phone App | Own name, description, price and Oscar's shop listing; works after save and reload; "Sprinklers" S1API `PhoneApp` with per-property **Water** and **Water All** | done | |
 | M3 | Fertilization / Additives | Property storage shelf consumption + **Fert / PGR / Speed Grow** buttons and status feedback in the Phone App | done | |
-| M4 | Polish, effects & IL2CPP | 5-segment spray effect and sound; `MelonPreferences`; co-op sync; main install back on normal branch with every game class checked against IL2CPP proxies and an IL2CPP build that loads | in progress (M4b dual build ready for IL2CPP test) | |
-| M5 | Model and release | Original sprinkler model (pipe and nozzle); IL2CPP and Mono builds; README complete; packaged zip; `v1.0.0` (publishing later is optional, see D4) | planned | |
+| M4 | Polish, effects & IL2CPP | 5-segment spray effect and sound; `MelonPreferences`; co-op sync; main install back on normal branch with every game class checked against IL2CPP proxies and an IL2CPP build that loads | done (Mono + IL2CPP verified live) | |
+| M5 | Model and release | Original sprinkler model (pipe and nozzle); IL2CPP and Mono builds; README complete; packaged zip; `v1.0.0` (publishing later is optional, see D4) | in progress (ready for final v1.0.0 test) | |
 
 ## Later (not planned yet)
 - Dedicated **Additive Reservoir** placeable item to hold additive stacks instead of pulling from general property shelves.
@@ -28,3 +28,4 @@
 - 2026-11-25: M1 (`m1-poc`) and M2 (`m2-phone-app`) verified live on Mono: $1,500 Oscar's Warehouse listing and redesigned Sprinklers Phone App work as expected. Started M3 on `m3-additives`.
 - 2026-11-25: M3 (`m3-additives`) verified live on Mono: property storage shelf Fertilizer consumption and Phone App status work cleanly. Started M4a (particles, audio, 5-segment cycle, `MelonPreferences`) on `m4-polish`.
 - 2026-11-25: M4a tested live on Mono; equalized audio volume to `AudioManager` FX settings, switched Steam to IL2CPP, and added dual Mono (`netstandard2.1`) + IL2CPP (`net6.0`) build targets on `m4-polish`.
+- 2026-11-25: Fixed IL2CPP `GetInstanceID()` deduplication and Phone App auto-refresh; IL2CPP verified live. Added procedural pipe/nozzle attachment, `v1.0.0` docs, and release zips on `m5-release`.
