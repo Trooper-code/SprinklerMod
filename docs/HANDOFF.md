@@ -24,13 +24,13 @@ update. Copy the whole game folder somewhere else (e.g. `E:\S1-modding\Schedule 
 | .NET SDK | 10.0.404 |
 
 ## How it works now
-M1–M4 are verified live (Mono and IL2CPP). On branch `m5-release`, `v1.0.0` adds procedural pipe & brass nozzle visuals (`SprinklerVisuals`), complete `README.md` / `CHANGELOG.md`, and packaged IL2CPP + Mono release zips under `dist/`. Research so far: `docs/research/INDEX.md`.
+M1–M5 (`v1.0.0`) are complete and verified live on both Mono and IL2CPP. All technical discoveries and reusable patterns are documented in `docs/research/game-systems.md` and `docs/research/modding-lessons.md`. Nexus-ready release zips live under `dist/`, and copy-paste release copy lives in `docs/NEXUS-RELEASE.md`.
 
 ## Where it stops
-M5 (`v1.0.0`) ready for final visual nozzle test on Windows, then merge & tag `v1.0.0`.
+Ready to merge `m5-release` → `main`, tag `v1.0.0`, and publish to Nexus Mods and GitHub.
 
 ## In progress
-- Antigravity: M5 release prep on branch `m5-release`.
+- Release ready on branch `m5-release`.
 
 ## Rules
 - Claude coordinates, reviews, merges and tags. Antigravity researches and codes, and never merges.
