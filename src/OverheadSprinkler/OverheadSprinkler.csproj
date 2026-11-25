@@ -2,18 +2,32 @@
   <Import Project="..\..\Directory.Build.props.user" Condition="Exists('..\..\Directory.Build.props.user')" />
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
-    <AssemblyName>OverheadSprinkler</AssemblyName>
+    <TargetFrameworks>netstandard2.1;net6.0</TargetFrameworks>
     <RootNamespace>OverheadSprinkler</RootNamespace>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
-    <NoWarn>NU1605;NU1701</NoWarn>
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+    <NoWarn>NU1603;NU1605;NU1701</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
+    <AssemblyName>OverheadSprinkler.Mono</AssemblyName>
+    <DefineConstants>$(DefineConstants);MONO</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net6.0'">
+    <AssemblyName>OverheadSprinkler.IL2CPP</AssemblyName>
+    <DefineConstants>$(DefineConstants);IL2CPP</DefineConstants>
   </PropertyGroup>
 
   <Target Name="CheckGamePath" BeforeTargets="ResolveReferences">
-    <Error Condition="'$(ScheduleIManagedDir)' == '' Or !Exists('$(ScheduleIManagedDir)\Assembly-CSharp.dll')"
+    <Error Condition="'$(TargetFramework)' == 'netstandard2.1' And ('$(ScheduleIManagedDir)' == '' Or !Exists('$(ScheduleIManagedDir)\Assembly-CSharp.dll'))"
            Text="ScheduleIManagedDir is not set or Assembly-CSharp.dll was not found. Copy Directory.Build.props.user.example to Directory.Build.props.user in the repo root and set ScheduleIManagedDir." />
+    <Error Condition="'$(TargetFramework)' == 'net6.0' And ('$(ScheduleIIl2CppDir)' == '' Or !Exists('$(ScheduleIIl2CppDir)\Assembly-CSharp.dll'))"
+           Text="ScheduleIIl2CppDir is not set or Il2CppAssemblies\Assembly-CSharp.dll was not found. Set ScheduleIIl2CppDir in Directory.Build.props.user after running MelonLoader once on the IL2CPP branch." />
+    <Error Condition="'$(TargetFramework)' == 'net6.0' And ('$(ScheduleIMelonNet6Dir)' == '' Or !Exists('$(ScheduleIMelonNet6Dir)\Il2CppInterop.Runtime.dll'))"
+           Text="ScheduleIMelonNet6Dir is not set or Il2CppInterop.Runtime.dll was not found. Set ScheduleIMelonNet6Dir in Directory.Build.props.user." />
   </Target>
 
   <ItemGroup>
@@ -21,7 +35,7 @@
     <PackageReference Include="S1API.Forked" Version="3.2.3" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
     <Reference Include="Assembly-CSharp">
       <HintPath>$(ScheduleIManagedDir)\Assembly-CSharp.dll</HintPath>
       <Private>false</Private>
@@ -60,6 +74,61 @@
     </Reference>
     <Reference Include="Unity.InputSystem">
       <HintPath>$(ScheduleIManagedDir)\Unity.InputSystem.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+    <Reference Include="Il2CppInterop.Runtime">
+      <HintPath>$(ScheduleIMelonNet6Dir)\Il2CppInterop.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppInterop.Common">
+      <HintPath>$(ScheduleIMelonNet6Dir)\Il2CppInterop.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2Cppmscorlib">
+      <HintPath>$(ScheduleIIl2CppDir)\Il2Cppmscorlib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(ScheduleIIl2CppDir)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppScheduleOne.Core">
+      <HintPath>$(ScheduleIIl2CppDir)\Il2CppScheduleOne.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppFishNet.Runtime">
+      <HintPath>$(ScheduleIIl2CppDir)\Il2CppFishNet.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(ScheduleIIl2CppDir)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(ScheduleIIl2CppDir)\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(ScheduleIIl2CppDir)\UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(ScheduleIIl2CppDir)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>$(ScheduleIIl2CppDir)\UnityEngine.ParticleSystemModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>$(ScheduleIIl2CppDir)\UnityEngine.AudioModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.InputSystem">
+      <HintPath>$(ScheduleIIl2CppDir)\Unity.InputSystem.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

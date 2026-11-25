@@ -4,17 +4,28 @@ using MelonLoader;
 using S1API.Items;
 using S1API.Lifecycle;
 using S1API.Shops;
+#if IL2CPP
+using Il2CppScheduleOne;
+using Il2CppScheduleOne.DevUtilities;
+using Il2CppScheduleOne.ObjectScripts;
+using Il2CppScheduleOne.PlayerScripts;
+using Il2CppScheduleOne.Property;
+using GameBuildableItemDefinition = Il2CppScheduleOne.ItemFramework.BuildableItemDefinition;
+using GameItemDefinition = Il2CppScheduleOne.ItemFramework.ItemDefinition;
+using GameItemInstance = Il2CppScheduleOne.ItemFramework.ItemInstance;
+#else
 using ScheduleOne;
 using ScheduleOne.DevUtilities;
 using ScheduleOne.ObjectScripts;
 using ScheduleOne.PlayerScripts;
 using ScheduleOne.Property;
-#if DEBUG
-using UnityEngine.InputSystem;
-#endif
 using GameBuildableItemDefinition = ScheduleOne.ItemFramework.BuildableItemDefinition;
 using GameItemDefinition = ScheduleOne.ItemFramework.ItemDefinition;
 using GameItemInstance = ScheduleOne.ItemFramework.ItemInstance;
+#endif
+#if DEBUG
+using UnityEngine.InputSystem;
+#endif
 using S1BuildableItemCreator = S1API.Items.Buildable.BuildableItemCreator;
 using S1BuildableItemDefinition = S1API.Items.Buildable.BuildableItemDefinition;
 using S1ItemDefinition = S1API.Items.ItemDefinition;
@@ -29,7 +40,7 @@ namespace OverheadSprinkler;
 /// - Loads MelonPreferences config (price, spray duration, particles, sound, volume).
 /// - Clones the best vanilla overhead grow light ("fullspectrumgrowlight") into "overhead_sprinkler_head".
 /// - Lists the item in Oscar's Warehouse shop (and any shop selling the Full Spectrum Grow Light).
-/// - Leaves M1 debug hotkeys (F7/F8) active only in DEBUG builds.
+/// - Compiles for both Mono (netstandard2.1) and IL2CPP (net6.0).
 /// </summary>
 public sealed class OverheadSprinklerMod : MelonMod
 {
@@ -217,17 +228,18 @@ public sealed class OverheadSprinklerMod : MelonMod
     {
         for (int i = 0; i < PreferredGrowLightIds.Length; i++)
         {
-            GameBuildableItemDefinition? candidate = Registry.GetItem<GameBuildableItemDefinition>(PreferredGrowLightIds[i]);
-            if (candidate != null && candidate.BuiltItem is GrowLight)
+            GameBuildableItemDefinition? candidate = GameCompat.TryCast<GameBuildableItemDefinition>(Registry.GetItem(PreferredGrowLightIds[i]));
+            if (candidate != null && GameCompat.TryCast<GrowLight>(candidate.BuiltItem) != null)
             {
                 return candidate;
             }
         }
 
-        List<GameItemDefinition> allItems = Singleton<Registry>.Instance.GetAllItems();
+        var allItems = Singleton<Registry>.Instance.GetAllItems();
         for (int i = 0; i < allItems.Count; i++)
         {
-            if (allItems[i] is GameBuildableItemDefinition buildable && buildable.BuiltItem is GrowLight)
+            GameBuildableItemDefinition? buildable = GameCompat.TryCast<GameBuildableItemDefinition>(allItems[i]);
+            if (buildable != null && GameCompat.TryCast<GrowLight>(buildable.BuiltItem) != null)
             {
                 return buildable;
             }

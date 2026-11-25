@@ -1,9 +1,23 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using MelonLoader;
+using UnityEngine;
+#if IL2CPP
+using Il2CppFishNet;
+using Il2CppFishNet.Object;
+using Il2CppScheduleOne;
+using Il2CppScheduleOne.DevUtilities;
+using Il2CppScheduleOne.EntityFramework;
+using Il2CppScheduleOne.Growing;
+using Il2CppScheduleOne.ItemFramework;
+using Il2CppScheduleOne.ObjectScripts;
+using Il2CppScheduleOne.Property;
+using Il2CppScheduleOne.Storage;
+using Il2CppScheduleOne.Tiles;
+#else
 using FishNet;
 using FishNet.Object;
-using MelonLoader;
 using ScheduleOne;
 using ScheduleOne.DevUtilities;
 using ScheduleOne.EntityFramework;
@@ -13,7 +27,7 @@ using ScheduleOne.ObjectScripts;
 using ScheduleOne.Property;
 using ScheduleOne.Storage;
 using ScheduleOne.Tiles;
-using UnityEngine;
+#endif
 
 namespace OverheadSprinkler;
 
@@ -204,7 +218,7 @@ public static class SprinklerController
             return heads;
         }
 
-        List<ProceduralGridItem> gridItems = property.GetBuildablesOfType<ProceduralGridItem>();
+        var gridItems = property.GetBuildablesOfType<ProceduralGridItem>();
         for (int i = 0; i < gridItems.Count; i++)
         {
             ProceduralGridItem item = gridItems[i];
@@ -232,7 +246,11 @@ public static class SprinklerController
             return null;
         }
 
-        List<CoordinateProceduralTilePair>? matches = head.sync___get_value_footprintTileMatches();
+#if IL2CPP
+        var matches = head.footprintTileMatches;
+#else
+        var matches = head.sync___get_value_footprintTileMatches();
+#endif
         if (matches == null || matches.Count == 0)
         {
             return null;
@@ -301,10 +319,11 @@ public static class SprinklerController
             return additives;
         }
 
-        List<ItemDefinition> allItems = Singleton<Registry>.Instance.GetAllItems();
+        var allItems = Singleton<Registry>.Instance.GetAllItems();
         for (int i = 0; i < allItems.Count; i++)
         {
-            if (allItems[i] is AdditiveDefinition additiveDef)
+            AdditiveDefinition? additiveDef = GameCompat.TryCast<AdditiveDefinition>(allItems[i]);
+            if (additiveDef != null)
             {
                 additives.Add(additiveDef);
             }
@@ -337,7 +356,7 @@ public static class SprinklerController
         }
 
         var seen = new HashSet<StorageEntity>();
-        List<PlaceableStorageEntity> placeables = property.GetBuildablesOfType<PlaceableStorageEntity>();
+        var placeables = property.GetBuildablesOfType<PlaceableStorageEntity>();
         for (int i = 0; i < placeables.Count; i++)
         {
             PlaceableStorageEntity placeable = placeables[i];
@@ -369,7 +388,7 @@ public static class SprinklerController
         List<StorageEntity> storages = GetPropertyStorageEntities(property);
         for (int i = 0; i < storages.Count; i++)
         {
-            List<ItemSlot>? slots = storages[i].ItemSlots;
+            var slots = storages[i].ItemSlots;
             if (slots == null)
             {
                 continue;
@@ -406,7 +425,7 @@ public static class SprinklerController
         List<StorageEntity> storages = GetPropertyStorageEntities(property);
         for (int i = 0; i < storages.Count; i++)
         {
-            List<ItemSlot>? slots = storages[i].ItemSlots;
+            var slots = storages[i].ItemSlots;
             if (slots == null)
             {
                 continue;
@@ -460,7 +479,7 @@ public static class SprinklerController
     public static List<PropertySprinklerInfo> GetOwnedPropertiesWithSprinklers()
     {
         var infos = new List<PropertySprinklerInfo>();
-        List<Property>? owned = Property.OwnedProperties;
+        var owned = Property.OwnedProperties;
         if (owned == null)
         {
             return infos;
@@ -838,7 +857,8 @@ public static class SprinklerController
 
         for (int i = 0; i < tile.BuildableOccupants.Count; i++)
         {
-            if (tile.BuildableOccupants[i] is GrowContainer container && !container.isGhost)
+            GrowContainer? container = GameCompat.TryCast<GrowContainer>(tile.BuildableOccupants[i]);
+            if (container != null && !container.isGhost)
             {
                 results.Add(container);
             }
