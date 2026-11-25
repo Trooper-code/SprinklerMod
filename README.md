@@ -1,51 +1,67 @@
 # Overhead Sprinkler for Schedule I
 
-A MelonLoader mod for **Schedule I** that adds an **Overhead Sprinkler Head**. Hang it on a Suspension Rack just like a Full Spectrum Grow Light, and control watering and fertilization across entire properties with one tap from the in-game **Sprinklers** phone app.
+A MelonLoader mod for **Schedule I** that adds a rack-mounted **Overhead Sprinkler Head**. Hang it on any Suspension Rack just like a Full Spectrum Grow Light, and water or fertilize entire properties with one tap from the in-game **Sprinklers** phone app.
 
 ## Features
-- **Hangs on the Suspension Rack:** Cloned from the Full Spectrum Grow Light (`fullspectrumgrowlight`) so it snaps onto any Suspension Rack slot and lights the pots underneath—no floor space wasted.
-- **Distinct Overhead Nozzle Visuals:** Each placed head mounts a gunmetal supply pipe, cyan indicator ring, and brass sprinkler nozzle underneath so you can tell it apart from standard grow lights.
-- **Automatic Per-Property Chaining:** Every Overhead Sprinkler Head placed in a property activates together automatically—no linking or wiring required.
-- **"Sprinklers" In-Game Phone App:** Accessible from anywhere on your phone:
-  - Lists every owned property with heads installed (head count, rack count, pot count, and live moisture bar).
-  - **Water Now / Top Up** waters every pot under every sprinkler-equipped rack in that property; **Water All** waters every property at once.
-  - **Additives (Fertilizer, PGR, Speed Grow):** Shows live bottle counts from storage shelves inside that property, consumes 1 bottle per eligible planted pot, and applies it automatically.
-- **Spray Particles & Equalized Audio:** Downward water mist (and color-coded additive bursts) plus vanilla sprinkler click/spray sounds scaled to your in-game Master × FX volume.
-- **Oscar's Warehouse Shop Listing:** Sold by **Oscar** at the Warehouse for **$1,500** (configurable).
-- **Save-Safe & Cross-Runtime:** Builds for both the normal **IL2CPP** Steam branch and the `alternate` **Mono** branch.
+
+- **Grow Light + Sprinkler in One Fixture:** Snaps onto Suspension Racks and lights the pots underneath without taking up floor space.
+- **Distinct Overhead Visuals:** Each placed head mounts a gunmetal supply pipe, cyan indicator ring, and brass nozzle underneath so you can easily tell it apart from standard grow lights.
+- **Automatic Per-Property Chaining:** Every head placed inside a property links together automatically—no wiring or manual setup required.
+- **"Sprinklers" In-Game Phone App:** Manage all owned properties from anywhere:
+  - Live moisture bars plus head, rack, and pot counts per property
+  - **Water Now / Top Up** for one property, or **Water All** across every property at once
+- **Property-Storage Fertilization:** Stock **Fertilizer**, **PGR**, or **Speed Grow** on storage shelves inside the property. The phone app shows live bottle counts, consumes 1 bottle per eligible planted pot, and skips empty pots, fully grown plants, and pots that already have that additive.
+- **Spray Mist & Balanced Audio:** Downward mist particles (blue for water, color-coded for additives) with spatial sprinkler audio scaled to your in-game Master × FX volume.
+- **Save-Safe & Dual-Runtime:** Uses Schedule I's native item and grid system, and supports both the default **IL2CPP** Steam branch and the `alternate` **Mono** beta branch.
 
 ## Requirements
-- **Schedule I** (v0.4.7f12 tested)
-- **MelonLoader** `0.7.3`+ ([MelonLoader Installer](https://melonwiki.xyz/))
-- **S1API (Forked by ifBars)** `3.2.3`+ ([Releases](https://github.com/ifBars/S1API/releases) / Thunderstore)
+
+- **Schedule I** (tested on `v0.4.7f12`)
+- **MelonLoader** `0.7.3+` — [Download](https://melonwiki.xyz/)
+- **S1API (Forked by ifBars)** `3.2.3+` — [Releases](https://github.com/ifBars/S1API/releases) / Thunderstore
 
 ## Installation
 
-### Normal Steam Branch (IL2CPP)
-1. Install **MelonLoader 0.7.3** into your Schedule I game folder and launch the game once to the main menu.
+Grab the zip that matches your Steam branch from the [Releases](https://github.com/Trooper-code/SprinklerMod/releases) page:
+
+### Default Steam Branch (IL2CPP)
+1. Install **MelonLoader 0.7.3+** into your Schedule I game folder and launch the game once to the main menu.
 2. Download the **IL2CPP** build of **S1API (Forked by ifBars)** (`S1API.Il2Cpp.MelonLoader.dll`) and place it in `<Schedule I>\Mods\`.
-3. Copy `OverheadSprinkler.IL2CPP.dll` into `<Schedule I>\Mods\`.
-4. Launch the game and visit **Oscar** at the Warehouse to buy **Overhead Sprinkler Heads** ($1,500).
+3. Extract `OverheadSprinkler-v1.0.0-IL2CPP.zip` into your `<Schedule I>` folder so `OverheadSprinkler.IL2CPP.dll` is in `<Schedule I>\Mods\`.
 
 ### `alternate` Beta Branch (Mono)
-1. Switch Schedule I to the `alternate` beta in Steam and install **MelonLoader 0.7.3**.
+1. Switch Schedule I to the `alternate` beta in Steam and install **MelonLoader 0.7.3+**.
 2. Place the **Mono** build of **S1API (Forked by ifBars)** (`S1API.dll`) in `<Schedule I>\Mods\`.
-3. Copy `OverheadSprinkler.Mono.dll` into `<Schedule I>\Mods\`.
+3. Extract `OverheadSprinkler-v1.0.0-Mono.zip` into your `<Schedule I>` folder so `OverheadSprinkler.Mono.dll` is in `<Schedule I>\Mods\`.
 
-## Configuration (`UserData/MelonPreferences.cfg`)
-After launching once, an `[OverheadSprinkler]` section is created in `<Schedule I>\UserData\MelonPreferences.cfg`:
+## How to Use
+
+1. Visit **Oscar** at the **Warehouse** and buy **Overhead Sprinkler Heads** ($1,500 each by default).
+2. Place them onto **Suspension Racks** above your pots.
+3. Open the **Sprinklers** app on your in-game phone to monitor moisture and water individual properties or all properties at once.
+4. *(Optional)* Place **Fertilizer**, **PGR**, or **Speed Grow** on storage shelves inside the same property to apply them from the app.
+
+## Configuration
+
+After launching the game once with the mod installed, edit `<Schedule I>\UserData\MelonPreferences.cfg` under `[OverheadSprinkler]`:
 
 | Setting | Default | Description |
-|---------|---------|-------------|
+|---|---|---|
 | `HeadPurchasePrice` | `1500.0` | Purchase price of the Overhead Sprinkler Head at Oscar's Warehouse |
-| `SprayDurationSeconds` | `4.5` | Duration of a 5-segment watering cycle in seconds (`0` for instant fill) |
-| `EnableSprayParticles` | `true` | Show downward water/additive mist particles under each head |
-| `EnableSpraySound` | `true` | Play sprinkler click and water spray sounds during activation |
-| `SoundVolume` | `0.7` | Volume multiplier (`0.0`–`1.0`) scaled by your in-game Master × FX audio settings |
+| `SprayDurationSeconds` | `4.5` | Length of a watering cycle in seconds (`0` for instant fill) |
+| `EnableSprayParticles` | `true` | Show downward water and additive mist particles under each head |
+| `EnableSpraySound` | `true` | Play sprinkler click and spray audio during activation |
+| `SoundVolume` | `0.7` | Volume multiplier (`0.0`–`1.0`), scaled by your in-game Master × FX audio settings |
+
+## Troubleshooting
+
+- **Mod doesn't load or crashes on startup:** Make sure both **Overhead Sprinkler** and **S1API** match your Steam branch (`IL2CPP` for the default branch, `Mono` for `alternate`). Don't put both DLLs in `Mods\` at the same time.
+- **Additives show `0` in the phone app:** Bottles must be placed on storage shelves inside the same property as the sprinkler heads.
 
 ## Building from Source
-1. Install the **.NET 10 SDK** (or .NET 6+ SDK supporting `netstandard2.1` and `net6.0`).
-2. Copy `Directory.Build.props.user.example` to `Directory.Build.props.user` at the repo root and point:
+
+1. Install the **.NET 10 SDK** (or any .NET 6+ SDK supporting `netstandard2.1` and `net6.0`).
+2. Copy `Directory.Build.props.user.example` to `Directory.Build.props.user` at the repo root and set your local paths:
    - `ScheduleIManagedDir` → `<Schedule I Mono>\Schedule I_Data\Managed`
    - `ScheduleIIl2CppDir` → `<Schedule I>\MelonLoader\Il2CppAssemblies`
    - `ScheduleIMelonNet6Dir` → `<Schedule I>\MelonLoader\net6`
@@ -54,11 +70,13 @@ After launching once, an `[OverheadSprinkler]` section is created in `<Schedule 
    dotnet build src/OverheadSprinkler/OverheadSprinkler.csproj -c Release
    ```
    Outputs:
-   - `src/OverheadSprinkler/bin/Release/netstandard2.1/OverheadSprinkler.Mono.dll`
    - `src/OverheadSprinkler/bin/Release/net6.0/OverheadSprinkler.IL2CPP.dll`
+   - `src/OverheadSprinkler/bin/Release/netstandard2.1/OverheadSprinkler.Mono.dll`
 
 ## Research & Documentation
-Everything discovered about Schedule I's `FloorRack`, `ProceduralGridItem`, `GrowContainer`, storage shelves, and `S1API` is documented in [docs/research/INDEX.md](docs/research/INDEX.md).
 
-## Legal
-This project contains only original code and documentation. It never includes game files, decompiled code, or proprietary assets. Schedule I is made by TVGS.
+Notes on Schedule I's `FloorRack`, `ProceduralGridItem`, `GrowContainer`, storage shelves, and `S1API` are documented in [docs/research/INDEX.md](docs/research/INDEX.md).
+
+## License & Legal
+
+This repository contains only original source code and documentation—no copyrighted game files, decompiled code, or proprietary assets. Schedule I is made by TVGS.
