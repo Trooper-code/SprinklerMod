@@ -915,13 +915,25 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
 #endif
     private sealed class SprinklerAppRefreshHook : MonoBehaviour
     {
+        private static float _nextRefreshTime;
+
 #if IL2CPP
         public SprinklerAppRefreshHook(IntPtr ptr) : base(ptr) { }
 #endif
 
-        private void OnEnable()
+        public void OnEnable()
         {
+            _nextRefreshTime = Time.unscaledTime + 1.0f;
             _activeInstance?.RefreshList();
+        }
+
+        public void Update()
+        {
+            if (Time.unscaledTime >= _nextRefreshTime)
+            {
+                _nextRefreshTime = Time.unscaledTime + 1.0f;
+                _activeInstance?.RefreshList();
+            }
         }
     }
 }

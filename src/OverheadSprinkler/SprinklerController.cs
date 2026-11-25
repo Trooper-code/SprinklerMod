@@ -170,6 +170,7 @@ public sealed class AdditiveApplySummary
 /// <summary>
 /// Pure lookup, watering, and additive-delivery controller decoupled from hotkeys and UI triggers.
 /// Shared by debug hotkeys and the Sprinklers PhoneApp.
+/// Deduplicates Unity objects by GetInstanceID() so IL2CPP wrapper instances never double-count.
 /// </summary>
 public static class SprinklerController
 {
@@ -192,7 +193,7 @@ public static class SprinklerController
         "speedgrow",
     };
 
-    private static readonly HashSet<Property> ActiveWateringProperties = new();
+    private static readonly HashSet<int> ActiveWateringPropertyIds = new();
 
     /// <summary>
     /// Raised whenever a property's watering state or container moisture changes during a spray cycle.
@@ -204,7 +205,7 @@ public static class SprinklerController
     /// </summary>
     public static bool IsPropertyWatering(Property? property)
     {
-        return property != null && ActiveWateringProperties.Contains(property);
+        return property != null && ActiveWateringPropertyIds.Contains(property.GetInstanceID());
     }
 
     /// <summary>
@@ -218,6 +219,7 @@ public static class SprinklerController
             return heads;
         }
 
+        var seenIds = new HashSet<int>();
         var gridItems = property.GetBuildablesOfType<ProceduralGridItem>();
         for (int i = 0; i < gridItems.Count; i++)
         {
@@ -227,7 +229,9 @@ public static class SprinklerController
                 continue;
             }
 
-            if (item.ItemInstance != null && string.Equals(item.ItemInstance.ID, ItemId, StringComparison.Ordinal))
+            if (item.ItemInstance != null
+                && string.Equals(item.ItemInstance.ID, ItemId, StringComparison.Ordinal)
+                && seenIds.Add(item.GetInstanceID()))
             {
                 heads.Add(item);
             }
@@ -275,14 +279,14 @@ public static class SprinklerController
     }
 
     /// <summary>
-    /// Collects every non-ghost GrowContainer (Pot, grow tent, MushroomBed) placed under a Suspension Rack.
+    /// Collects every unique non-ghost GrowContainer (Pot, grow tent, MushroomBed) placed under a Suspension Rack.
     /// </summary>
-    public static HashSet<GrowContainer> GetContainersUnderRack(FloorRack rack)
+    public static List<GrowContainer> GetContainersUnderRack(FloorRack rack)
     {
-        var containers = new HashSet<GrowContainer>();
+        var byId = new Dictionary<int, GrowContainer>();
         if (rack == null || rack.isGhost)
         {
-            return containers;
+            return new List<GrowContainer>();
         }
 
         if (rack.ProceduralTiles != null)
@@ -291,7 +295,7 @@ public static class SprinklerController
             {
                 ProceduralTile procTile = rack.ProceduralTiles[i];
                 Tile? stdTile = procTile?.MatchedFootprintTile?.MatchedStandardTile;
-                CollectContainersFromTile(stdTile, containers);
+                CollectContainersFromTile(stdTile, byId);
             }
         }
 
@@ -301,11 +305,11 @@ public static class SprinklerController
             for (int i = 0; i < rack.CoordinatePairs.Count; i++)
             {
                 Tile stdTile = rack.OwnerGrid.GetTile(rack.CoordinatePairs[i].coord2);
-                CollectContainersFromTile(stdTile, containers);
+                CollectContainersFromTile(stdTile, byId);
             }
         }
 
-        return containers;
+        return new List<GrowContainer>(byId.Values);
     }
 
     /// <summary>
@@ -355,7 +359,7 @@ public static class SprinklerController
             return storages;
         }
 
-        var seen = new HashSet<StorageEntity>();
+        var seenIds = new HashSet<int>();
         var placeables = property.GetBuildablesOfType<PlaceableStorageEntity>();
         for (int i = 0; i < placeables.Count; i++)
         {
@@ -365,7 +369,7 @@ public static class SprinklerController
                 continue;
             }
 
-            if (seen.Add(placeable.StorageEntity))
+            if (seenIds.Add(placeable.StorageEntity.GetInstanceID()))
             {
                 storages.Add(placeable.StorageEntity);
             }
@@ -495,21 +499,25 @@ public static class SprinklerController
                 continue;
             }
 
-            CollectRacksAndContainers(prop, out List<ProceduralGridItem> heads, out HashSet<FloorRack> racks, out HashSet<GrowContainer> containers);
+            CollectRacksAndContainers(
+                prop,
+                out List<ProceduralGridItem> heads,
+                out Dictionary<int, FloorRack> racksById,
+                out Dictionary<int, GrowContainer> containersById);
             if (heads.Count == 0)
             {
                 continue;
             }
 
             float avgMoisture = 1f;
-            if (containers.Count > 0)
+            if (containersById.Count > 0)
             {
                 float sum = 0f;
-                foreach (GrowContainer container in containers)
+                foreach (GrowContainer container in containersById.Values)
                 {
                     sum += container.NormalizedMoistureAmount;
                 }
-                avgMoisture = sum / containers.Count;
+                avgMoisture = sum / containersById.Count;
             }
 
             var stockEntries = new List<AdditiveStockEntry>(allAdditives.Count);
@@ -518,7 +526,7 @@ public static class SprinklerController
                 AdditiveDefinition additiveDef = allAdditives[a];
                 int storageCount = CountItemInPropertyStorage(prop, additiveDef.ID);
                 int eligibleCount = 0;
-                foreach (GrowContainer container in containers)
+                foreach (GrowContainer container in containersById.Values)
                 {
                     if (IsContainerEligibleForAdditive(container, additiveDef))
                     {
@@ -533,8 +541,8 @@ public static class SprinklerController
                 prop,
                 prop.PropertyName,
                 heads.Count,
-                racks.Count,
-                containers.Count,
+                racksById.Count,
+                containersById.Count,
                 avgMoisture,
                 stockEntries));
         }
@@ -557,17 +565,17 @@ public static class SprinklerController
         CollectRacksAndContainers(
             property,
             out List<ProceduralGridItem> heads,
-            out HashSet<FloorRack> racks,
-            out HashSet<GrowContainer> uniqueContainers);
+            out Dictionary<int, FloorRack> racksById,
+            out Dictionary<int, GrowContainer> containersById);
 
-        var results = new List<ContainerWaterResult>(uniqueContainers.Count);
+        var results = new List<ContainerWaterResult>(containersById.Count);
         if (IsPropertyWatering(property))
         {
             return new WaterSummary(
                 property.PropertyName,
                 heads.Count,
-                racks.Count,
-                uniqueContainers.Count,
+                racksById.Count,
+                containersById.Count,
                 0,
                 skippedNotServer: false,
                 alreadyRunning: true,
@@ -579,8 +587,8 @@ public static class SprinklerController
             return new WaterSummary(
                 property.PropertyName,
                 heads.Count,
-                racks.Count,
-                uniqueContainers.Count,
+                racksById.Count,
+                containersById.Count,
                 0,
                 skippedNotServer: true,
                 alreadyRunning: false,
@@ -606,7 +614,7 @@ public static class SprinklerController
             SprinklerEffects.PlaySprayOnHeads(heads, 1.2f, WaterMistColor, isAdditiveBurst: false);
 
             int wateredCount = 0;
-            foreach (GrowContainer container in uniqueContainers)
+            foreach (GrowContainer container in containersById.Values)
             {
                 float before = container.NormalizedMoistureAmount;
                 container.ChangeMoistureAmount(container.MoistureCapacity);
@@ -622,25 +630,26 @@ public static class SprinklerController
             return new WaterSummary(
                 property.PropertyName,
                 heads.Count,
-                racks.Count,
-                uniqueContainers.Count,
+                racksById.Count,
+                containersById.Count,
                 wateredCount,
                 skippedNotServer: false,
                 alreadyRunning: false,
                 results);
         }
 
-        ActiveWateringProperties.Add(property);
+        int propertyId = property.GetInstanceID();
+        ActiveWateringPropertyIds.Add(propertyId);
         SprinklerEffects.PlaySprayOnHeads(heads, duration, WaterMistColor, isAdditiveBurst: false);
         OnSprinklerStateChanged?.Invoke();
-        MelonCoroutines.Start(RunWateringRoutine(property, new List<GrowContainer>(uniqueContainers), duration));
+        MelonCoroutines.Start(RunWateringRoutine(propertyId, new List<GrowContainer>(containersById.Values), duration));
 
         return new WaterSummary(
             property.PropertyName,
             heads.Count,
-            racks.Count,
-            uniqueContainers.Count,
-            uniqueContainers.Count,
+            racksById.Count,
+            containersById.Count,
+            containersById.Count,
             skippedNotServer: false,
             alreadyRunning: false,
             results);
@@ -680,10 +689,10 @@ public static class SprinklerController
             property,
             out List<ProceduralGridItem> heads,
             out _,
-            out HashSet<GrowContainer> uniqueContainers);
+            out Dictionary<int, GrowContainer> containersById);
 
         var eligible = new List<GrowContainer>();
-        foreach (GrowContainer container in uniqueContainers)
+        foreach (GrowContainer container in containersById.Values)
         {
             if (IsContainerEligibleForAdditive(container, additiveDef))
             {
@@ -708,13 +717,19 @@ public static class SprinklerController
         bool ranOutOfStock = false;
         for (int i = 0; i < eligible.Count; i++)
         {
+            GrowContainer target = eligible[i];
+            if (!IsContainerEligibleForAdditive(target, additiveDef))
+            {
+                continue;
+            }
+
             if (!TryConsumeOneFromPropertyStorage(property, additiveDef.ID))
             {
                 ranOutOfStock = true;
                 break;
             }
 
-            eligible[i].ApplyAdditive_Server(additiveDef.ID);
+            target.ApplyAdditive_Server(additiveDef.ID);
             appliedCount++;
         }
 
@@ -734,7 +749,7 @@ public static class SprinklerController
             skippedNotServer: false);
     }
 
-    private static IEnumerator RunWateringRoutine(Property property, List<GrowContainer> containers, float totalDuration)
+    private static IEnumerator RunWateringRoutine(int propertyInstanceId, List<GrowContainer> containers, float totalDuration)
     {
         try
         {
@@ -762,7 +777,7 @@ public static class SprinklerController
         }
         finally
         {
-            ActiveWateringProperties.Remove(property);
+            ActiveWateringPropertyIds.Remove(propertyInstanceId);
             OnSprinklerStateChanged?.Invoke();
         }
     }
@@ -824,31 +839,33 @@ public static class SprinklerController
     private static void CollectRacksAndContainers(
         Property property,
         out List<ProceduralGridItem> heads,
-        out HashSet<FloorRack> racks,
-        out HashSet<GrowContainer> containers)
+        out Dictionary<int, FloorRack> racksById,
+        out Dictionary<int, GrowContainer> containersById)
     {
         heads = FindHeadsInProperty(property);
-        racks = new HashSet<FloorRack>();
+        racksById = new Dictionary<int, FloorRack>();
         for (int i = 0; i < heads.Count; i++)
         {
             FloorRack? rack = GetParentRack(heads[i]);
             if (rack != null)
             {
-                racks.Add(rack);
+                racksById[rack.GetInstanceID()] = rack;
             }
         }
 
-        containers = new HashSet<GrowContainer>();
-        foreach (FloorRack rack in racks)
+        containersById = new Dictionary<int, GrowContainer>();
+        foreach (FloorRack rack in racksById.Values)
         {
-            foreach (GrowContainer container in GetContainersUnderRack(rack))
+            List<GrowContainer> underRack = GetContainersUnderRack(rack);
+            for (int i = 0; i < underRack.Count; i++)
             {
-                containers.Add(container);
+                GrowContainer container = underRack[i];
+                containersById[container.GetInstanceID()] = container;
             }
         }
     }
 
-    private static void CollectContainersFromTile(Tile? tile, HashSet<GrowContainer> results)
+    private static void CollectContainersFromTile(Tile? tile, Dictionary<int, GrowContainer> resultsById)
     {
         if (tile == null || tile.BuildableOccupants == null)
         {
@@ -860,7 +877,7 @@ public static class SprinklerController
             GrowContainer? container = GameCompat.TryCast<GrowContainer>(tile.BuildableOccupants[i]);
             if (container != null && !container.isGhost)
             {
-                results.Add(container);
+                resultsById[container.GetInstanceID()] = container;
             }
         }
     }
