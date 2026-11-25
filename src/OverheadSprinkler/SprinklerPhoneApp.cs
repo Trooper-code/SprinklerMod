@@ -99,6 +99,7 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         LayoutElement headerLayout = header.AddComponent<LayoutElement>();
         headerLayout.minHeight = 68f;
         headerLayout.preferredHeight = 68f;
+        headerLayout.flexibleHeight = 0f;
         headerLayout.flexibleWidth = 1f;
 
         HorizontalLayoutGroup row = header.AddComponent<HorizontalLayoutGroup>();
@@ -189,6 +190,10 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
 
         _listContent = UIFactory.ScrollableVerticalList("PropertyList", listHost.transform, out ScrollRect scrollRect);
         scrollRect.scrollSensitivity = 25f;
+        _listContent.offsetMin = Vector2.zero;
+        _listContent.offsetMax = Vector2.zero;
+        _listContent.sizeDelta = Vector2.zero;
+        _listContent.anchoredPosition = Vector2.zero;
 
         VerticalLayoutGroup listLayout = _listContent.GetComponent<VerticalLayoutGroup>();
         if (listLayout != null)
@@ -208,6 +213,7 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         LayoutElement footerLe = footer.AddComponent<LayoutElement>();
         footerLe.minHeight = 34f;
         footerLe.preferredHeight = 34f;
+        footerLe.flexibleHeight = 0f;
         footerLe.flexibleWidth = 1f;
 
         HorizontalLayoutGroup footerLayout = footer.AddComponent<HorizontalLayoutGroup>();
@@ -490,8 +496,9 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
             }
 
             string propWord = summaries.Count == 1 ? "property" : "properties";
+            string headWord = totalHeads == 1 ? "head" : "heads";
             string potWord = totalPots == 1 ? "pot" : "pots";
-            string msg = $"Watered {summaries.Count} {propWord} ({totalHeads} heads, {totalPots} {potWord} filled to 100%).";
+            string msg = $"Watered {summaries.Count} {propWord} ({totalHeads} {headWord}, {totalPots} {potWord} filled to 100%).";
             SetStatus(msg);
             MelonLogger.Msg("[OverheadSprinkler] " + msg);
         }
