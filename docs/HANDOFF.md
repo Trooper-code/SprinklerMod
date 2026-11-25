@@ -17,25 +17,20 @@ update. Copy the whole game folder somewhere else (e.g. `E:\S1-modding\Schedule 
 ## Tool versions
 | Tool | Version |
 |------|---------|
-| Schedule I, main install | v0.4.7f12 Alternate (confirmed: main menu screenshot, 2026-11-19) |
+| Schedule I, main install | v0.4.7f12 Alternate (confirmed: main menu screenshot, 2026-11-19; switched to Mono branch 2026-11-25) |
 | Schedule I, Mono copy | v0.4.7f12 Alternate (confirmed: main menu screenshot, 2026-11-19); Unity 2022.3.62f2 |
-| MelonLoader | 0.7.x in the main install (exact: TODO, the agent records it; Josh installs it if missing) |
-| S1API Forked (ifBars) | 3.0.22 or newer (exact: TODO) |
-| .NET SDK | TODO (agent records it in the M0 report) |
+| MelonLoader | 0.7.3 |
+| S1API Forked (ifBars) | 3.2.3 |
+| .NET SDK | 10.0.404 |
 
 ## How it works now
-No code yet. The design is settled: an Overhead Sprinkler Head hangs on a Suspension Rack like a grow light, covers
-every pot under that one rack, and waters them all when the player activates it (`docs/DECISIONS.md` D1, D2, D4,
-D5; D5 replaced automatic watering). The
-plan is to clone a grow light with S1API and reuse the vanilla sprinklers' water-adding code. Whether that works
-is what M0 finds out. Research so far: `docs/research/INDEX.md`.
+M1 PoC passed live testing in the Barn (`MelonLoader/Latest.log`, 2026-11-25): cloning `fullspectrumgrowlight` via S1API hangs on `FloorRack`, and `SprinklerController` waters pots across multiple racks at once. M2 adds the $1,500 Oscar's Warehouse listing, save/load support, and the "Sprinklers" S1API `PhoneApp` (`docs/superpowers/specs/2026-11-25-overhead-sprinkler-design.md`, `docs/DECISIONS.md` D6). Research so far: `docs/research/INDEX.md`.
 
 ## Where it stops
-Nothing to test yet.
+M2 ready for Windows testing (Oscar's Warehouse listing, Phone App watering, and save/reload persistence).
 
 ## In progress
-- Antigravity: `docs/prompts/M0-research.md` on branch `m0-research`.
-  Report (when done): `docs/reports/M0-research.md` on that branch.
+- Antigravity: M2 on branch `m2-phone-app`.
 
 ## Rules
 - Claude coordinates, reviews, merges and tags. Antigravity researches and codes, and never merges.

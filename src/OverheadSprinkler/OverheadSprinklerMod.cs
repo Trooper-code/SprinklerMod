@@ -2,15 +2,16 @@ using System;
 using System.Collections.Generic;
 using MelonLoader;
 using S1API.Items;
-using S1API.Items.Buildable;
 using S1API.Lifecycle;
+using S1API.Shops;
 using ScheduleOne;
 using ScheduleOne.DevUtilities;
-using ScheduleOne.ItemFramework;
 using ScheduleOne.ObjectScripts;
 using ScheduleOne.PlayerScripts;
 using ScheduleOne.Property;
+#if DEBUG
 using UnityEngine.InputSystem;
+#endif
 using GameBuildableItemDefinition = ScheduleOne.ItemFramework.BuildableItemDefinition;
 using GameItemDefinition = ScheduleOne.ItemFramework.ItemDefinition;
 using GameItemInstance = ScheduleOne.ItemFramework.ItemInstance;
@@ -18,19 +19,24 @@ using S1BuildableItemCreator = S1API.Items.Buildable.BuildableItemCreator;
 using S1BuildableItemDefinition = S1API.Items.Buildable.BuildableItemDefinition;
 using S1ItemDefinition = S1API.Items.ItemDefinition;
 
-[assembly: MelonInfo(typeof(OverheadSprinkler.OverheadSprinklerMod), "OverheadSprinkler", "0.1.0", "Trooper-code")]
+[assembly: MelonInfo(typeof(OverheadSprinkler.OverheadSprinklerMod), "OverheadSprinkler", "0.2.0", "Trooper-code")]
 [assembly: MelonGame("TVGS", "Schedule I")]
 
 namespace OverheadSprinkler;
 
 /// <summary>
-/// M1 Proof-of-Concept MelonMod:
-/// - Clones a vanilla grow light via S1API into "overhead_sprinkler_head" without mutating the shared prefab.
-/// - F7 spawns an Overhead Sprinkler Head into the player's inventory.
-/// - F8 waters every pot/grow container under every Suspension Rack with a head in the current property.
+/// Main MelonMod entrypoint for Overhead Sprinkler:
+/// - Clones the best vanilla overhead grow light ("fullspectrumgrowlight") into "overhead_sprinkler_head" ($1,500).
+/// - Lists the item in Oscar's Warehouse shop (and any shop selling the Full Spectrum Grow Light).
+/// - Leaves M1 debug hotkeys (F7/F8) active only in DEBUG builds.
 /// </summary>
 public sealed class OverheadSprinklerMod : MelonMod
 {
+    /// <summary>
+    /// Purchase price per Overhead Sprinkler Head (higher than the $1,000 Big Sprinkler).
+    /// </summary>
+    public const float HeadPurchasePrice = 1500f;
+
     private static readonly string[] PreferredGrowLightIds =
     {
         "fullspectrumgrowlight",
@@ -38,10 +44,13 @@ public sealed class OverheadSprinklerMod : MelonMod
         "halogengrowlight",
     };
 
+    private string? _clonedSourceId;
+
     public override void OnInitializeMelon()
     {
         GameLifecycle.OnPreLoad += OnPreLoad;
-        LoggerInstance.Msg("OverheadSprinkler M1 loaded. Hotkeys in Main scene: F7 = spawn head, F8 = water current property.");
+        GameLifecycle.OnLoadComplete += OnLoadComplete;
+        LoggerInstance.Msg("OverheadSprinkler v0.2.0 loaded.");
     }
 
     public override void OnSceneWasInitialized(int buildIndex, string sceneName)
@@ -52,6 +61,7 @@ public sealed class OverheadSprinklerMod : MelonMod
         }
     }
 
+#if DEBUG
     public override void OnUpdate()
     {
         Keyboard? keyboard = Keyboard.current;
@@ -69,10 +79,17 @@ public sealed class OverheadSprinklerMod : MelonMod
             TriggerWaterCurrentProperty();
         }
     }
+#endif
 
     private void OnPreLoad()
     {
         EnsureItemRegistered();
+    }
+
+    private void OnLoadComplete()
+    {
+        EnsureItemRegistered();
+        RegisterInShops();
     }
 
     private void EnsureItemRegistered()
@@ -101,23 +118,98 @@ public sealed class OverheadSprinklerMod : MelonMod
                 return;
             }
 
-            // CloneFrom shares sourceDef.BuiltItem; do not mutate BuiltItem in M1 so vanilla grow lights stay intact.
+            // CloneFrom shares sourceDef.BuiltItem; do not mutate BuiltItem so vanilla grow lights stay intact.
             S1BuildableItemDefinition created = S1BuildableItemCreator.CloneFrom(sourceDef.ID)
                 .WithBasicInfo(
                     SprinklerController.ItemId,
                     "Overhead Sprinkler Head",
-                    "Hangs from a Suspension Rack and waters every pot underneath.",
+                    "High-end overhead grow light with an integrated sprinkler head. Hangs on a Suspension Rack and waters every pot underneath via the Sprinklers phone app.",
                     ItemCategory.Growing)
-                .WithPricing(300f, 0.5f)
+                .WithPricing(HeadPurchasePrice, 0.5f)
                 .Build();
 
             ItemManager.PreserveRuntimeItem(created);
+            _clonedSourceId = sourceDef.ID;
             LoggerInstance.Msg(
-                $"Registered '{SprinklerController.ItemId}' by cloning '{sourceDef.ID}' ({sourceDef.Name}).");
+                $"Registered '{SprinklerController.ItemId}' (${HeadPurchasePrice:F0}) by cloning '{sourceDef.ID}' ({sourceDef.Name}).");
         }
         catch (Exception ex)
         {
             LoggerInstance.Error($"Failed to register '{SprinklerController.ItemId}': {ex}");
+        }
+    }
+
+    private void RegisterInShops()
+    {
+        try
+        {
+            S1ItemDefinition? itemDef = ItemManager.GetDefinition(SprinklerController.ItemId);
+            if (itemDef == null)
+            {
+                LoggerInstance.Warning($"Cannot add '{SprinklerController.ItemId}' to shops because its definition is not registered.");
+                return;
+            }
+
+            var targetShops = new List<Shop>();
+            string sourceLookupId = _clonedSourceId ?? "fullspectrumgrowlight";
+            Shop[] sourceShops = ShopManager.FindShopsByItem(sourceLookupId);
+            for (int i = 0; i < sourceShops.Length; i++)
+            {
+                if (sourceShops[i] != null && !targetShops.Contains(sourceShops[i]))
+                {
+                    targetShops.Add(sourceShops[i]);
+                }
+            }
+
+            if (targetShops.Count == 0)
+            {
+                Shop? oscarShop = ShopManager.GetShopByName("Oscar's Store")
+                                  ?? ShopManager.GetShopByName("Warehouse");
+                if (oscarShop != null)
+                {
+                    targetShops.Add(oscarShop);
+                }
+                else
+                {
+                    Shop[] growingShops = ShopManager.FindShopsByCategory(ItemCategory.Growing);
+                    for (int i = 0; i < growingShops.Length; i++)
+                    {
+                        if (growingShops[i] != null && !targetShops.Contains(growingShops[i]))
+                        {
+                            targetShops.Add(growingShops[i]);
+                        }
+                    }
+                }
+            }
+
+            if (targetShops.Count == 0)
+            {
+                LoggerInstance.Warning("No matching shop found to list Overhead Sprinkler Head.");
+                return;
+            }
+
+            for (int i = 0; i < targetShops.Count; i++)
+            {
+                Shop shop = targetShops[i];
+                if (shop.HasItem(SprinklerController.ItemId))
+                {
+                    continue;
+                }
+
+                if (shop.AddItem(itemDef, HeadPurchasePrice))
+                {
+                    LoggerInstance.Msg(
+                        $"Added '{SprinklerController.ItemId}' to shop '{shop.Name}' for ${HeadPurchasePrice:F0}.");
+                }
+                else
+                {
+                    LoggerInstance.Warning($"Shop.AddItem returned false for shop '{shop.Name}'.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            LoggerInstance.Error($"Failed to register '{SprinklerController.ItemId}' in shops: {ex}");
         }
     }
 
@@ -144,6 +236,7 @@ public sealed class OverheadSprinklerMod : MelonMod
         return null;
     }
 
+#if DEBUG
     private void SpawnHeadInInventory()
     {
         try
@@ -216,4 +309,5 @@ public sealed class OverheadSprinklerMod : MelonMod
             LoggerInstance.Error($"F8 water failed: {ex}");
         }
     }
+#endif
 }
