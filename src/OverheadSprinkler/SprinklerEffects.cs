@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using MelonLoader;
 using ScheduleOne;
+using ScheduleOne.Audio;
+using ScheduleOne.Core.Audio;
 using ScheduleOne.DevUtilities;
 using ScheduleOne.EntityFramework;
 using ScheduleOne.ItemFramework;
@@ -17,7 +19,7 @@ namespace OverheadSprinkler;
 /// </summary>
 public static class SprinklerEffects
 {
-    private const int MaxAudioHeadsPerCycle = 4;
+    private const int MaxAudioHeadsPerCycle = 2;
     private const float CleanupTailSeconds = 1.5f;
 
     private static bool _clipsSearched;
@@ -52,6 +54,20 @@ public static class SprinklerEffects
         }
 
         float clampedDuration = Mathf.Max(0.4f, durationSeconds);
+        int validHeadCount = 0;
+        for (int i = 0; i < heads.Count; i++)
+        {
+            if (heads[i] != null && !heads[i].isGhost)
+            {
+                validHeadCount++;
+            }
+        }
+
+        int plannedAudioCount = Mathf.Max(1, Mathf.Min(validHeadCount, MaxAudioHeadsPerCycle));
+        float gameFxVolume = Singleton<AudioManager>.InstanceExists
+            ? Singleton<AudioManager>.Instance.GetVolume(EAudioType.FX, scaled: true)
+            : 1f;
+        float effectiveVolume = Mathf.Clamp01(gameFxVolume * Mathf.Clamp01(SprinklerConfig.SoundVolume) * 0.45f / Mathf.Sqrt(plannedAudioCount));
         int audioCount = 0;
 
         for (int i = 0; i < heads.Count; i++)
@@ -78,15 +94,19 @@ public static class SprinklerEffects
             {
                 audioCount++;
                 audio = fxGo.AddComponent<AudioSource>();
+                if (Singleton<AudioManager>.InstanceExists)
+                {
+                    audio.outputAudioMixerGroup = Singleton<AudioManager>.Instance.MainGameMixer;
+                }
                 audio.spatialBlend = 1f;
                 audio.minDistance = 2f;
                 audio.maxDistance = 18f;
                 audio.rolloffMode = AudioRolloffMode.Linear;
-                audio.volume = Mathf.Clamp01(SprinklerConfig.SoundVolume);
+                audio.volume = effectiveVolume;
 
                 if (_clickClip != null)
                 {
-                    audio.PlayOneShot(_clickClip, Mathf.Clamp01(SprinklerConfig.SoundVolume));
+                    audio.PlayOneShot(_clickClip, 1f);
                 }
 
                 if (_waterClip != null)
