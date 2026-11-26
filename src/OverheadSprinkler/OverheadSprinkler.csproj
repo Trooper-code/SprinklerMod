@@ -15,11 +15,13 @@
   <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.1'">
     <AssemblyName>OverheadSprinkler.Mono</AssemblyName>
     <DefineConstants>$(DefineConstants);MONO</DefineConstants>
+    <DefineConstants Condition="'$(SteamNetworkLibMonoPath)' != '' And Exists('$(SteamNetworkLibMonoPath)')">$(DefineConstants);HAS_STEAMNETWORKLIB</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)' == 'net6.0'">
     <AssemblyName>OverheadSprinkler.IL2CPP</AssemblyName>
     <DefineConstants>$(DefineConstants);IL2CPP</DefineConstants>
+    <DefineConstants Condition="'$(SteamNetworkLibIl2CppPath)' != '' And Exists('$(SteamNetworkLibIl2CppPath)')">$(DefineConstants);HAS_STEAMNETWORKLIB</DefineConstants>
   </PropertyGroup>
 
   <Target Name="CheckGamePath" BeforeTargets="ResolveReferences">
@@ -81,6 +83,14 @@
       <HintPath>$(ScheduleIManagedDir)\Unity.InputSystem.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="SteamNetworkLib" Condition="'$(SteamNetworkLibMonoPath)' != '' And Exists('$(SteamNetworkLibMonoPath)')">
+      <HintPath>$(SteamNetworkLibMonoPath)</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="com.rlabrecque.steamworks.net" Condition="'$(SteamNetworkLibMonoPath)' != '' And Exists('$(SteamNetworkLibMonoPath)')">
+      <HintPath>$(ScheduleIManagedDir)\com.rlabrecque.steamworks.net.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
@@ -138,6 +148,14 @@
     </Reference>
     <Reference Include="Unity.InputSystem">
       <HintPath>$(ScheduleIIl2CppDir)\Unity.InputSystem.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="SteamNetworkLib" Condition="'$(SteamNetworkLibIl2CppPath)' != '' And Exists('$(SteamNetworkLibIl2CppPath)')">
+      <HintPath>$(SteamNetworkLibIl2CppPath)</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2Cppcom.rlabrecque.steamworks.net" Condition="'$(SteamNetworkLibIl2CppPath)' != '' And Exists('$(SteamNetworkLibIl2CppPath)')">
+      <HintPath>$(ScheduleIIl2CppDir)\Il2Cppcom.rlabrecque.steamworks.net.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

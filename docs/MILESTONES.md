@@ -12,7 +12,7 @@
 | M3 | Fertilization / Additives | Property storage shelf consumption + **Fert / PGR / Speed Grow** buttons and status feedback in the Phone App | done | |
 | M4 | Polish, effects & IL2CPP | 5-segment spray effect and sound; `MelonPreferences`; ~~co-op sync~~ (**wrong**: M4 only delivered spray effects, audio, `MelonPreferences`, and dual Mono + IL2CPP builds—`InstanceFinder.IsServer` still blocked non-hosts and no two-player test ran); main install back on normal branch with every game class checked against IL2CPP proxies and an IL2CPP build that loads | done (Mono + IL2CPP single-player verified live; co-op deferred to M6) | |
 | M5 | Model and release | Original sprinkler model (pipe and nozzle); IL2CPP and Mono builds; README complete; packaged zip; `v1.0.0` (publishing later is optional, see D4) | done (verified live on IL2CPP; ready to merge & release) | |
-| M6 | Co-op | Non-hosts can water and apply additives (M6a); spray effects and shared watering lock synced across players (M6b) | in progress (M6a ready for 2-player test) | |
+| M6 | Co-op | Non-hosts can water and apply additives (M6a); spray effects and shared watering lock synced across players via optional `SteamNetworkLib` (M6b) | in progress (M6a + M6b ready for 2-player test) | |
 
 ## Later (not planned yet)
 - Dedicated **Additive Reservoir** placeable item to hold additive stacks instead of pulling from general property shelves.
@@ -29,4 +29,4 @@
 - 2026-11-25: M3 (`m3-additives`) verified live on Mono: property storage shelf Fertilizer consumption and Phone App status work cleanly. Started M4a (particles, audio, 5-segment cycle, `MelonPreferences`) on `m4-polish`.
 - 2026-11-25: M4a tested live on Mono; equalized audio volume to `AudioManager` FX settings, switched Steam to IL2CPP, and added dual Mono (`netstandard2.1`) + IL2CPP (`net6.0`) build targets on `m4-polish`.
 - 2026-11-25: Fixed IL2CPP `GetInstanceID()` deduplication and Phone App auto-refresh; IL2CPP verified live. Added procedural pipe/nozzle attachment, `v1.0.0` docs, and release zips on `m5-release`.
-- 2026-11-25: M6a (`m6a-coop-gate`): corrected M4's co-op claim, removed the non-host `InstanceFinder.IsServer` gate and `M4b` placeholder messages, bumped to `v1.1.0`, and prepared for two-player testing.
+- 2026-11-25: M6a (`m6a-coop-gate`): corrected M4's co-op claim, removed the non-host `InstanceFinder.IsServer` gate and `M4b` placeholder messages, bumped to `v1.1.0`, and wired optional `SteamNetworkLib` v1.6.0 P2P sync for spray mist/audio and shared watering locks (`SprinklerCoopSync.cs`), ready for two-player testing.

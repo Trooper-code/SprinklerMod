@@ -70,12 +70,19 @@ public sealed class OverheadSprinklerMod : MelonMod
         if (string.Equals(sceneName, "Main", StringComparison.OrdinalIgnoreCase))
         {
             EnsureItemRegistered();
+            SprinklerCoopSync.TryInitialize();
+        }
+        else if (string.Equals(sceneName, "Menu", StringComparison.OrdinalIgnoreCase))
+        {
+            SprinklerCoopSync.TryInitialize();
         }
     }
 
-#if DEBUG
     public override void OnUpdate()
     {
+        SprinklerCoopSync.ProcessIncoming();
+
+#if DEBUG
         Keyboard? keyboard = Keyboard.current;
         if (keyboard == null)
         {
@@ -90,12 +97,13 @@ public sealed class OverheadSprinklerMod : MelonMod
         {
             TriggerWaterCurrentProperty();
         }
-    }
 #endif
+    }
 
     private void OnPreSceneChange()
     {
         _subscribedPropertyIds.Clear();
+        SprinklerCoopSync.ResetSession();
     }
 
     private void OnPreLoad()
@@ -109,6 +117,7 @@ public sealed class OverheadSprinklerMod : MelonMod
         RegisterInShops();
         SprinklerVisuals.AttachNozzlesInAllOwnedProperties();
         HookPropertyItemAddedEvents();
+        SprinklerCoopSync.TryInitialize();
     }
 
     private void HookPropertyItemAddedEvents()

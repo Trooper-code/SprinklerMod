@@ -6,5 +6,8 @@
     <ScheduleIIl2CppDir>C:\Path\To\Schedule I\MelonLoader\Il2CppAssemblies</ScheduleIIl2CppDir>
     <!-- Path to MelonLoader\net6 in your normal IL2CPP Schedule I install -->
     <ScheduleIMelonNet6Dir>C:\Path\To\Schedule I\MelonLoader\net6</ScheduleIMelonNet6Dir>
+    <!-- Optional: paths to SteamNetworkLib DLLs for synced co-op spray effects and watering lock -->
+    <!-- <SteamNetworkLibIl2CppPath>C:\Path\To\Schedule I\UserLibs\SteamNetworkLib-IL2Cpp.dll</SteamNetworkLibIl2CppPath> -->
+    <!-- <SteamNetworkLibMonoPath>C:\Path\To\Schedule I Mono\UserLibs\SteamNetworkLib-Mono.dll</SteamNetworkLibMonoPath> -->
   </PropertyGroup>
 </Project>

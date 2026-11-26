@@ -19,6 +19,7 @@ A MelonLoader mod for **Schedule I** that adds a rack-mounted **Overhead Sprinkl
 - **Schedule I** (tested on `v0.4.7f12`)
 - **MelonLoader** `0.7.3+` — [Download](https://melonwiki.xyz/)
 - **S1API (Forked by ifBars)** `3.2.3+` — [Releases](https://github.com/ifBars/S1API/releases) / Thunderstore
+- **SteamNetworkLib (by ifBars)** `1.6.0+` *(optional, recommended for co-op)* — [Releases](https://github.com/ifBars/SteamNetworkLib/releases) / Thunderstore. Syncs spray mist, audio, and the watering lock across players; single-player works fine without it.
 
 ## Installation
 
@@ -27,12 +28,14 @@ Grab the zip that matches your Steam branch from the [Releases](https://github.c
 ### Default Steam Branch (IL2CPP)
 1. Install **MelonLoader 0.7.3+** into your Schedule I game folder and launch the game once to the main menu.
 2. Download the **IL2CPP** build of **S1API (Forked by ifBars)** (`S1API.Il2Cpp.MelonLoader.dll`) and place it in `<Schedule I>\Mods\`.
-3. Extract `OverheadSprinkler-v1.0.0-IL2CPP.zip` into your `<Schedule I>` folder so `OverheadSprinkler.IL2CPP.dll` is in `<Schedule I>\Mods\`.
+3. *(Optional, for synced co-op spray mist/audio & shared lock)* Download `SteamNetworkLib-IL2Cpp.dll` and place it in `<Schedule I>\UserLibs\`.
+4. Extract `OverheadSprinkler-v1.0.0-IL2CPP.zip` into your `<Schedule I>` folder so `OverheadSprinkler.IL2CPP.dll` is in `<Schedule I>\Mods\`.
 
 ### `alternate` Beta Branch (Mono)
 1. Switch Schedule I to the `alternate` beta in Steam and install **MelonLoader 0.7.3+**.
 2. Place the **Mono** build of **S1API (Forked by ifBars)** (`S1API.dll`) in `<Schedule I>\Mods\`.
-3. Extract `OverheadSprinkler-v1.0.0-Mono.zip` into your `<Schedule I>` folder so `OverheadSprinkler.Mono.dll` is in `<Schedule I>\Mods\`.
+3. *(Optional, for synced co-op spray mist/audio & shared lock)* Place `SteamNetworkLib-Mono.dll` in `<Schedule I>\UserLibs\`.
+4. Extract `OverheadSprinkler-v1.0.0-Mono.zip` into your `<Schedule I>` folder so `OverheadSprinkler.Mono.dll` is in `<Schedule I>\Mods\`.
 
 ## How to Use
 
@@ -45,7 +48,7 @@ Grab the zip that matches your Steam branch from the [Releases](https://github.c
 
 - **Everyone needs the mod:** Every player in the co-op lobby must have **Overhead Sprinkler** installed (same version, matching each player's Steam branch—IL2CPP or Mono).
 - **Anyone can trigger it:** Both the host and non-host friends can use the **Sprinklers** phone app to water properties and apply additives from property storage shelves.
-- **Current limitation:** Spray mist and sprinkler sound currently only play on the PC of the player who pressed the button (all players still see pots fill and additives apply). Syncing the spray effects and watering lock across all players is planned for the next update.
+- **Synced mist, sound & watering lock:** Drop `SteamNetworkLib-IL2Cpp.dll` (or `SteamNetworkLib-Mono.dll` on `alternate`) into `<Schedule I>\UserLibs\` on each player's PC so everyone sees the spray mist, hears the sprinkler sound, and shares the "already watering" lock. Without `SteamNetworkLib`, watering and additives still sync via the game's servers, and mist/sound simply stay local to whoever pressed the button.
 
 ## Configuration
 
@@ -71,6 +74,7 @@ After launching the game once with the mod installed, edit `<Schedule I>\UserDat
    - `ScheduleIManagedDir` → `<Schedule I Mono>\Schedule I_Data\Managed`
    - `ScheduleIIl2CppDir` → `<Schedule I>\MelonLoader\Il2CppAssemblies`
    - `ScheduleIMelonNet6Dir` → `<Schedule I>\MelonLoader\net6`
+   - *(Optional)* `SteamNetworkLibIl2CppPath` / `SteamNetworkLibMonoPath` → paths to `SteamNetworkLib-IL2Cpp.dll` / `SteamNetworkLib-Mono.dll` to enable P2P effect & lock sync in that target build.
 3. Build both targets:
    ```powershell
    dotnet build src/OverheadSprinkler/OverheadSprinkler.csproj -c Release

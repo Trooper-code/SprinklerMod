@@ -186,6 +186,7 @@ public static class SprinklerController
     };
 
     private static readonly HashSet<int> ActiveWateringPropertyIds = new();
+    private static readonly HashSet<int> RemoteWateringPropertyIds = new();
 
     /// <summary>
     /// Raised whenever a property's watering state or container moisture changes during a spray cycle.
@@ -193,11 +194,108 @@ public static class SprinklerController
     public static event Action? OnSprinklerStateChanged;
 
     /// <summary>
-    /// Returns true while a multi-segment watering cycle is actively running on the given property.
+    /// Returns true while a multi-segment watering cycle is actively running on the given property
+    /// (locally or triggered remotely by another player in co-op).
     /// </summary>
     public static bool IsPropertyWatering(Property? property)
     {
-        return property != null && ActiveWateringPropertyIds.Contains(property.GetInstanceID());
+        if (property == null)
+        {
+            return false;
+        }
+
+        int id = property.GetInstanceID();
+        return ActiveWateringPropertyIds.Contains(id) || RemoteWateringPropertyIds.Contains(id);
+    }
+
+    /// <summary>
+    /// Plays spray mist particles and audio locally in response to a remote co-op player's trigger.
+    /// </summary>
+    public static void PlayRemoteSprayEffect(string propertyCode, float durationSeconds, string kind)
+    {
+        Property? property = FindOwnedPropertyByCode(propertyCode);
+        if (property == null)
+        {
+            return;
+        }
+
+        List<ProceduralGridItem> heads = FindHeadsInProperty(property);
+        if (heads.Count == 0)
+        {
+            return;
+        }
+
+        bool isAdditive = !string.Equals(kind, "water", StringComparison.OrdinalIgnoreCase);
+        Color mistColor = isAdditive ? GetAdditiveMistColor(kind) : WaterMistColor;
+        SprinklerEffects.PlaySprayOnHeads(heads, durationSeconds, mistColor, isAdditive);
+    }
+
+    /// <summary>
+    /// Updates the remote co-op watering lock state for a property and refreshes UI listeners.
+    /// </summary>
+    public static void SetRemoteWateringLock(string propertyCode, bool isLocked)
+    {
+        Property? property = FindOwnedPropertyByCode(propertyCode);
+        if (property == null)
+        {
+            return;
+        }
+
+        int id = property.GetInstanceID();
+        bool changed = isLocked
+            ? RemoteWateringPropertyIds.Add(id)
+            : RemoteWateringPropertyIds.Remove(id);
+
+        if (changed)
+        {
+            OnSprinklerStateChanged?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// Clears all remote co-op watering locks (called on lobby exit or scene change).
+    /// </summary>
+    public static void ClearAllRemoteWateringLocks()
+    {
+        if (RemoteWateringPropertyIds.Count > 0)
+        {
+            RemoteWateringPropertyIds.Clear();
+            OnSprinklerStateChanged?.Invoke();
+        }
+    }
+
+    private static Property? FindOwnedPropertyByCode(string propertyCode)
+    {
+        if (string.IsNullOrEmpty(propertyCode))
+        {
+            return null;
+        }
+
+        var owned = Property.OwnedProperties;
+        if (owned == null)
+        {
+            return null;
+        }
+
+        for (int i = 0; i < owned.Count; i++)
+        {
+            Property prop = owned[i];
+            if (prop != null && string.Equals(prop.PropertyCode, propertyCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return prop;
+            }
+        }
+
+        for (int i = 0; i < owned.Count; i++)
+        {
+            Property prop = owned[i];
+            if (prop != null && string.Equals(prop.PropertyName, propertyCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return prop;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -590,6 +688,7 @@ public static class SprinklerController
         if (duration <= 0.05f)
         {
             SprinklerEffects.PlaySprayOnHeads(heads, 1.2f, WaterMistColor, isAdditiveBurst: false);
+            SprinklerCoopSync.BroadcastSpray(property, 1.2f, "water");
 
             int wateredCount = 0;
             foreach (GrowContainer container in containersById.Values)
@@ -616,10 +715,13 @@ public static class SprinklerController
         }
 
         int propertyId = property.GetInstanceID();
+        string propertyCode = SprinklerCoopSync.GetPropertyKey(property);
         ActiveWateringPropertyIds.Add(propertyId);
+        SprinklerCoopSync.BroadcastLock(propertyCode, isLocked: true);
         SprinklerEffects.PlaySprayOnHeads(heads, duration, WaterMistColor, isAdditiveBurst: false);
+        SprinklerCoopSync.BroadcastSpray(property, duration, "water");
         OnSprinklerStateChanged?.Invoke();
-        MelonCoroutines.Start(RunWateringRoutine(propertyId, new List<GrowContainer>(containersById.Values), duration));
+        MelonCoroutines.Start(RunWateringRoutine(propertyId, propertyCode, new List<GrowContainer>(containersById.Values), duration));
 
         return new WaterSummary(
             property.PropertyName,
@@ -699,6 +801,7 @@ public static class SprinklerController
         if (appliedCount > 0)
         {
             SprinklerEffects.PlaySprayOnHeads(heads, 1.8f, GetAdditiveMistColor(additiveDef.ID), isAdditiveBurst: true);
+            SprinklerCoopSync.BroadcastSpray(property, 1.8f, additiveDef.ID);
         }
 
         int remaining = CountItemInPropertyStorage(property, additiveDef.ID);
@@ -711,7 +814,7 @@ public static class SprinklerController
             ranOutOfStock);
     }
 
-    private static IEnumerator RunWateringRoutine(int propertyInstanceId, List<GrowContainer> containers, float totalDuration)
+    private static IEnumerator RunWateringRoutine(int propertyInstanceId, string propertyCode, List<GrowContainer> containers, float totalDuration)
     {
         try
         {
@@ -740,6 +843,7 @@ public static class SprinklerController
         finally
         {
             ActiveWateringPropertyIds.Remove(propertyInstanceId);
+            SprinklerCoopSync.BroadcastLock(propertyCode, isLocked: false);
             OnSprinklerStateChanged?.Invoke();
         }
     }
