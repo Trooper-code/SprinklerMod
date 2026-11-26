@@ -32,7 +32,7 @@ using S1BuildableItemCreator = S1API.Items.Buildable.BuildableItemCreator;
 using S1BuildableItemDefinition = S1API.Items.Buildable.BuildableItemDefinition;
 using S1ItemDefinition = S1API.Items.ItemDefinition;
 
-[assembly: MelonInfo(typeof(OverheadSprinkler.OverheadSprinklerMod), "OverheadSprinkler", "1.0.0", "Trooper-code")]
+[assembly: MelonInfo(typeof(OverheadSprinkler.OverheadSprinklerMod), "OverheadSprinkler", "1.1.0", "Trooper-code")]
 [assembly: MelonGame("TVGS", "Schedule I")]
 
 namespace OverheadSprinkler;
@@ -62,7 +62,7 @@ public sealed class OverheadSprinklerMod : MelonMod
         GameLifecycle.OnPreLoad += OnPreLoad;
         GameLifecycle.OnLoadComplete += OnLoadComplete;
         GameLifecycle.OnPreSceneChange += OnPreSceneChange;
-        LoggerInstance.Msg("OverheadSprinkler v1.0.0 loaded.");
+        LoggerInstance.Msg("OverheadSprinkler v1.1.0 loaded.");
     }
 
     public override void OnSceneWasInitialized(int buildIndex, string sceneName)
@@ -346,13 +346,6 @@ public sealed class OverheadSprinklerMod : MelonMod
             }
 
             WaterSummary summary = SprinklerController.WaterProperty(currentProperty);
-            if (summary.SkippedNotServer)
-            {
-                LoggerInstance.Warning(
-                    $"Property '{summary.PropertyName}': found {summary.HeadCount} head(s) across {summary.RackCount} rack(s) " +
-                    $"({summary.ContainersFound} pot/bed(s)), but skipped watering because this client is not the host/server.");
-                return;
-            }
 
             LoggerInstance.Msg(
                 $"Started watering property '{summary.PropertyName}': {summary.HeadCount} head(s), " +

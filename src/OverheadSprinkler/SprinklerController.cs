@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using MelonLoader;
 using UnityEngine;
 #if IL2CPP
-using Il2CppFishNet;
 using Il2CppFishNet.Object;
 using Il2CppScheduleOne;
 using Il2CppScheduleOne.DevUtilities;
@@ -16,7 +15,6 @@ using Il2CppScheduleOne.Property;
 using Il2CppScheduleOne.Storage;
 using Il2CppScheduleOne.Tiles;
 #else
-using FishNet;
 using FishNet.Object;
 using ScheduleOne;
 using ScheduleOne.DevUtilities;
@@ -111,7 +109,6 @@ public sealed class WaterSummary
         int rackCount,
         int containersFound,
         int containersWatered,
-        bool skippedNotServer,
         bool alreadyRunning,
         IReadOnlyList<ContainerWaterResult> results)
     {
@@ -120,7 +117,6 @@ public sealed class WaterSummary
         RackCount = rackCount;
         ContainersFound = containersFound;
         ContainersWatered = containersWatered;
-        SkippedNotServer = skippedNotServer;
         AlreadyRunning = alreadyRunning;
         Results = results;
     }
@@ -130,7 +126,6 @@ public sealed class WaterSummary
     public int RackCount { get; }
     public int ContainersFound { get; }
     public int ContainersWatered { get; }
-    public bool SkippedNotServer { get; }
     public bool AlreadyRunning { get; }
     public IReadOnlyList<ContainerWaterResult> Results { get; }
 }
@@ -146,8 +141,7 @@ public sealed class AdditiveApplySummary
         int appliedCount,
         int eligibleCount,
         int remainingInStorage,
-        bool ranOutOfStock,
-        bool skippedNotServer)
+        bool ranOutOfStock)
     {
         PropertyName = propertyName;
         AdditiveName = additiveName;
@@ -155,7 +149,6 @@ public sealed class AdditiveApplySummary
         EligibleCount = eligibleCount;
         RemainingInStorage = remainingInStorage;
         RanOutOfStock = ranOutOfStock;
-        SkippedNotServer = skippedNotServer;
     }
 
     public string PropertyName { get; }
@@ -164,7 +157,6 @@ public sealed class AdditiveApplySummary
     public int EligibleCount { get; }
     public int RemainingInStorage { get; }
     public bool RanOutOfStock { get; }
-    public bool SkippedNotServer { get; }
 }
 
 /// <summary>
@@ -578,21 +570,7 @@ public static class SprinklerController
                 racksById.Count,
                 containersById.Count,
                 0,
-                skippedNotServer: false,
                 alreadyRunning: true,
-                results);
-        }
-
-        if (!InstanceFinder.IsServer)
-        {
-            return new WaterSummary(
-                property.PropertyName,
-                heads.Count,
-                racksById.Count,
-                containersById.Count,
-                0,
-                skippedNotServer: true,
-                alreadyRunning: false,
                 results);
         }
 
@@ -604,7 +582,6 @@ public static class SprinklerController
                 0,
                 0,
                 0,
-                skippedNotServer: false,
                 alreadyRunning: false,
                 results);
         }
@@ -634,7 +611,6 @@ public static class SprinklerController
                 racksById.Count,
                 containersById.Count,
                 wateredCount,
-                skippedNotServer: false,
                 alreadyRunning: false,
                 results);
         }
@@ -651,7 +627,6 @@ public static class SprinklerController
             racksById.Count,
             containersById.Count,
             containersById.Count,
-            skippedNotServer: false,
             alreadyRunning: false,
             results);
     }
@@ -701,19 +676,6 @@ public static class SprinklerController
             }
         }
 
-        if (!InstanceFinder.IsServer)
-        {
-            int currentStock = CountItemInPropertyStorage(property, additiveDef.ID);
-            return new AdditiveApplySummary(
-                property.PropertyName,
-                additiveDef.Name,
-                0,
-                eligible.Count,
-                currentStock,
-                ranOutOfStock: false,
-                skippedNotServer: true);
-        }
-
         int appliedCount = 0;
         bool ranOutOfStock = false;
         for (int i = 0; i < eligible.Count; i++)
@@ -746,8 +708,7 @@ public static class SprinklerController
             appliedCount,
             eligible.Count,
             remaining,
-            ranOutOfStock,
-            skippedNotServer: false);
+            ranOutOfStock);
     }
 
     private static IEnumerator RunWateringRoutine(int propertyInstanceId, List<GrowContainer> containers, float totalDuration)

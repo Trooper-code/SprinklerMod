@@ -557,12 +557,6 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
                 return;
             }
 
-            if (summary.SkippedNotServer)
-            {
-                SetStatus($"Cannot water {summary.PropertyName} as a non-host client yet (co-op sync comes in M4b).");
-                return;
-            }
-
             string potWord = summary.ContainersWatered == 1 ? "pot" : "pots";
             string headWord = summary.HeadCount == 1 ? "head" : "heads";
             bool isInstant = SprinklerConfig.SprayDurationSeconds <= 0.05f;
@@ -595,25 +589,14 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
             int totalPots = 0;
             int totalHeads = 0;
             int activeProps = 0;
-            bool anySkipped = false;
             for (int i = 0; i < summaries.Count; i++)
             {
-                if (summaries[i].SkippedNotServer)
-                {
-                    anySkipped = true;
-                }
-                else if (!summaries[i].AlreadyRunning)
+                if (!summaries[i].AlreadyRunning)
                 {
                     activeProps++;
                     totalPots += summaries[i].ContainersWatered;
                     totalHeads += summaries[i].HeadCount;
                 }
-            }
-
-            if (anySkipped && totalPots == 0)
-            {
-                SetStatus("Cannot water as a non-host client yet (co-op sync comes in M4b).");
-                return;
             }
 
             if (activeProps == 0)
@@ -645,12 +628,6 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         {
             AdditiveApplySummary summary = SprinklerController.ApplyAdditiveToProperty(property, additiveDef);
             RefreshList();
-
-            if (summary.SkippedNotServer)
-            {
-                SetStatus($"Cannot apply {summary.AdditiveName} at {summary.PropertyName} as a non-host client yet (M4b).");
-                return;
-            }
 
             if (summary.EligibleCount == 0)
             {
