@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased
+- **Co-op Support (M6a, v1.1.0):** Removed the host-only check in `SprinklerController` and the non-host block messages in the **Sprinklers** phone app so non-host players in co-op lobbies can water properties and apply additives from storage shelves (pending live two-player verification; spray mist/audio and the watering lock remain local to the triggering player until M6b).
+
 ## v1.0.0 — 2026-11-25
 First full release supporting both **IL2CPP** (normal Steam branch) and **Mono** (`alternate` branch).
 

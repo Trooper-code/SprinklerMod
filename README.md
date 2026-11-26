@@ -41,6 +41,12 @@ Grab the zip that matches your Steam branch from the [Releases](https://github.c
 3. Open the **Sprinklers** app on your in-game phone to monitor moisture and water individual properties or all properties at once.
 4. *(Optional)* Place **Fertilizer**, **PGR**, or **Speed Grow** on storage shelves inside the same property to apply them from the app.
 
+## Multiplayer
+
+- **Everyone needs the mod:** Every player in the co-op lobby must have **Overhead Sprinkler** installed (same version, matching each player's Steam branch—IL2CPP or Mono).
+- **Anyone can trigger it:** Both the host and non-host friends can use the **Sprinklers** phone app to water properties and apply additives from property storage shelves.
+- **Current limitation:** Spray mist and sprinkler sound currently only play on the PC of the player who pressed the button (all players still see pots fill and additives apply). Syncing the spray effects and watering lock across all players is planned for the next update.
+
 ## Configuration
 
 After launching the game once with the mod installed, edit `<Schedule I>\UserData\MelonPreferences.cfg` under `[OverheadSprinkler]`:
