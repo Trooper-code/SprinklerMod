@@ -523,7 +523,7 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         for (int i = 0; i < additives.Count; i++)
         {
             AdditiveStockEntry entry = additives[i];
-            bool canApply = entry.StorageCount > 0 && entry.EligibleCount > 0;
+            bool canApply = !isWatering && entry.StorageCount > 0 && entry.EligibleCount > 0;
             Color pillColor = canApply ? GetAdditiveButtonColor(entry.Definition.ID) : BtnDisabled;
             string pillText = $"{entry.Definition.Name} ({entry.StorageCount})";
 
@@ -628,6 +628,12 @@ public sealed class SprinklerPhoneApp : S1PhoneApp
         {
             AdditiveApplySummary summary = SprinklerController.ApplyAdditiveToProperty(property, additiveDef);
             RefreshList();
+
+            if (summary.AlreadyRunning)
+            {
+                SetStatus($"{summary.PropertyName} is currently busy.");
+                return;
+            }
 
             if (summary.EligibleCount == 0)
             {

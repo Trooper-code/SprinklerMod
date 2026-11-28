@@ -141,7 +141,8 @@ public sealed class AdditiveApplySummary
         int appliedCount,
         int eligibleCount,
         int remainingInStorage,
-        bool ranOutOfStock)
+        bool ranOutOfStock,
+        bool alreadyRunning = false)
     {
         PropertyName = propertyName;
         AdditiveName = additiveName;
@@ -149,6 +150,7 @@ public sealed class AdditiveApplySummary
         EligibleCount = eligibleCount;
         RemainingInStorage = remainingInStorage;
         RanOutOfStock = ranOutOfStock;
+        AlreadyRunning = alreadyRunning;
     }
 
     public string PropertyName { get; }
@@ -157,6 +159,7 @@ public sealed class AdditiveApplySummary
     public int EligibleCount { get; }
     public int RemainingInStorage { get; }
     public bool RanOutOfStock { get; }
+    public bool AlreadyRunning { get; }
 }
 
 /// <summary>
@@ -172,6 +175,7 @@ public static class SprinklerController
     public const string ItemId = "overhead_sprinkler_head";
 
     private const int WaterSegments = 5;
+    private const float AdditiveSprayDurationSeconds = 1.8f;
 
     private static readonly Color WaterMistColor = new(0.62f, 0.88f, 1.0f, 0.85f);
     private static readonly Color FertilizerMistColor = new(0.32f, 0.88f, 0.48f, 0.85f);
@@ -763,55 +767,103 @@ public static class SprinklerController
             throw new ArgumentNullException(nameof(additiveDef));
         }
 
-        CollectRacksAndContainers(
-            property,
-            out List<ProceduralGridItem> heads,
-            out _,
-            out Dictionary<int, GrowContainer> containersById);
-
-        var eligible = new List<GrowContainer>();
-        foreach (GrowContainer container in containersById.Values)
+        if (IsPropertyWatering(property))
         {
-            if (IsContainerEligibleForAdditive(container, additiveDef))
-            {
-                eligible.Add(container);
-            }
+            int currentStock = CountItemInPropertyStorage(property, additiveDef.ID);
+            return new AdditiveApplySummary(
+                property.PropertyName,
+                additiveDef.Name,
+                appliedCount: 0,
+                eligibleCount: 0,
+                remainingInStorage: currentStock,
+                ranOutOfStock: false,
+                alreadyRunning: true);
         }
 
-        int appliedCount = 0;
-        bool ranOutOfStock = false;
-        for (int i = 0; i < eligible.Count; i++)
+        int propertyId = property.GetInstanceID();
+        string propertyCode = SprinklerCoopSync.GetPropertyKey(property);
+        ActiveWateringPropertyIds.Add(propertyId);
+        SprinklerCoopSync.BroadcastLock(propertyCode, isLocked: true);
+        OnSprinklerStateChanged?.Invoke();
+
+        bool lockHandedOff = false;
+        try
         {
-            GrowContainer target = eligible[i];
-            if (!IsContainerEligibleForAdditive(target, additiveDef))
+            CollectRacksAndContainers(
+                property,
+                out List<ProceduralGridItem> heads,
+                out _,
+                out Dictionary<int, GrowContainer> containersById);
+
+            var eligible = new List<GrowContainer>();
+            foreach (GrowContainer container in containersById.Values)
             {
-                continue;
+                if (IsContainerEligibleForAdditive(container, additiveDef))
+                {
+                    eligible.Add(container);
+                }
             }
 
-            if (!TryConsumeOneFromPropertyStorage(property, additiveDef.ID))
+            int appliedCount = 0;
+            bool ranOutOfStock = false;
+            for (int i = 0; i < eligible.Count; i++)
             {
-                ranOutOfStock = true;
-                break;
+                GrowContainer target = eligible[i];
+                if (!IsContainerEligibleForAdditive(target, additiveDef))
+                {
+                    continue;
+                }
+
+                if (!TryConsumeOneFromPropertyStorage(property, additiveDef.ID))
+                {
+                    ranOutOfStock = true;
+                    break;
+                }
+
+                target.ApplyAdditive_Server(additiveDef.ID);
+                appliedCount++;
             }
 
-            target.ApplyAdditive_Server(additiveDef.ID);
-            appliedCount++;
-        }
+            if (appliedCount > 0)
+            {
+                SprinklerEffects.PlaySprayOnHeads(heads, AdditiveSprayDurationSeconds, GetAdditiveMistColor(additiveDef.ID), isAdditiveBurst: true);
+                SprinklerCoopSync.BroadcastSpray(property, AdditiveSprayDurationSeconds, additiveDef.ID);
+                MelonCoroutines.Start(ReleasePropertyLockRoutine(propertyId, propertyCode, AdditiveSprayDurationSeconds));
+                lockHandedOff = true;
+            }
 
-        if (appliedCount > 0)
+            int remaining = CountItemInPropertyStorage(property, additiveDef.ID);
+            return new AdditiveApplySummary(
+                property.PropertyName,
+                additiveDef.Name,
+                appliedCount,
+                eligible.Count,
+                remaining,
+                ranOutOfStock);
+        }
+        finally
         {
-            SprinklerEffects.PlaySprayOnHeads(heads, 1.8f, GetAdditiveMistColor(additiveDef.ID), isAdditiveBurst: true);
-            SprinklerCoopSync.BroadcastSpray(property, 1.8f, additiveDef.ID);
+            if (!lockHandedOff)
+            {
+                ActiveWateringPropertyIds.Remove(propertyId);
+                SprinklerCoopSync.BroadcastLock(propertyCode, isLocked: false);
+                OnSprinklerStateChanged?.Invoke();
+            }
         }
+    }
 
-        int remaining = CountItemInPropertyStorage(property, additiveDef.ID);
-        return new AdditiveApplySummary(
-            property.PropertyName,
-            additiveDef.Name,
-            appliedCount,
-            eligible.Count,
-            remaining,
-            ranOutOfStock);
+    private static IEnumerator ReleasePropertyLockRoutine(int propertyInstanceId, string propertyCode, float delaySeconds)
+    {
+        try
+        {
+            yield return new WaitForSeconds(delaySeconds);
+        }
+        finally
+        {
+            ActiveWateringPropertyIds.Remove(propertyInstanceId);
+            SprinklerCoopSync.BroadcastLock(propertyCode, isLocked: false);
+            OnSprinklerStateChanged?.Invoke();
+        }
     }
 
     private static IEnumerator RunWateringRoutine(int propertyInstanceId, string propertyCode, List<GrowContainer> containers, float totalDuration)

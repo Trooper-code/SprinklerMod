@@ -19,7 +19,7 @@ A MelonLoader mod for **Schedule I** that adds a rack-mounted **Overhead Sprinkl
 - **Schedule I** (tested on `v0.4.7f12`)
 - **MelonLoader** `0.7.3+` — [Download](https://melonwiki.xyz/)
 - **S1API (Forked by ifBars)** `3.2.3+` — [Releases](https://github.com/ifBars/S1API/releases) / Thunderstore
-- **SteamNetworkLib (by ifBars)** `1.6.0+` *(optional, recommended for co-op)* — [Releases](https://github.com/ifBars/SteamNetworkLib/releases) / Thunderstore. Syncs spray mist, audio, and the watering lock across players; single-player works fine without it.
+- **SteamNetworkLib (by ifBars)** `1.6.0+` *(optional, recommended for co-op)* — [Releases](https://github.com/ifBars/SteamNetworkLib/releases) / Thunderstore. Syncs spray mist, audio, and the watering/additive lock across players; single-player works fine without it.
 
 ## Installation
 
@@ -48,7 +48,7 @@ Grab the zip that matches your Steam branch from the [Releases](https://github.c
 
 - **Everyone needs the mod:** Every player in the co-op lobby must have **Overhead Sprinkler** installed (same version, matching each player's Steam branch—IL2CPP or Mono).
 - **Anyone can trigger it:** Both the host and non-host friends can use the **Sprinklers** phone app to water properties and apply additives from property storage shelves.
-- **Synced mist, sound & watering lock:** Drop `SteamNetworkLib-IL2Cpp.dll` (or `SteamNetworkLib-Mono.dll` on `alternate`) into `<Schedule I>\UserLibs\` on each player's PC so everyone sees the spray mist, hears the sprinkler sound, and shares the "already watering" lock. Without `SteamNetworkLib`, watering and additives still sync via the game's servers, and mist/sound simply stay local to whoever pressed the button.
+- **Synced mist, sound & watering/additive lock:** Drop `SteamNetworkLib-IL2Cpp.dll` (or `SteamNetworkLib-Mono.dll` on `alternate`) into `<Schedule I>\UserLibs\` on each player's PC so everyone sees the spray mist, hears the sprinkler sound, and shares the property lock during watering and additive bursts. Without `SteamNetworkLib`, watering and additives still sync via the game's servers, and mist/sound simply stay local to whoever pressed the button. *(Co-op sync is pending live two-player verification.)*
 
 ## Configuration
 
